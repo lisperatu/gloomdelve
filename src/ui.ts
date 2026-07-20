@@ -76,8 +76,8 @@ export class UI {
           and every grave between here and there is merely a waiting room.<br/>
           Descend. Pledge your soul to whatever listens. Come back crowned — or not at all.</p>
           <p class="hint">${hint}</p>
-          <div class="title-feats">26 floors · 6 side branches · 7×7 lineages & callings · 6 gods · 51 creatures ·
-          discovery codex · named delvers & hall of fame · your run auto-saves</div>
+          <div class="title-feats">a keyboard-driven roguelike · plays in your browser · your descent auto-saves ·
+          what waits below is yours to discover</div>
         </div>
       </div>`, true);
   }
