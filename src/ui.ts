@@ -266,20 +266,76 @@ export class UI {
   codexSel = 0;
   codexSearch: string | null = null; // null = not searching
 
+  private searchMatches(): { tab: 'bestiary' | 'faiths' | 'chronicle' | 'origins'; sel: number; section: string; label: string; snippet: string }[] {
+    const g = this.game;
+    const q = (this.codexSearch ?? '').toLowerCase();
+    if (!q) return [];
+    const out: { tab: 'bestiary' | 'faiths' | 'chronicle' | 'origins'; sel: number; section: string; label: string; snippet: string }[] = [];
+    const snip = (hay: string): string => {
+      const i = hay.toLowerCase().indexOf(q);
+      if (i < 0) return hay.slice(0, 110);
+      const a = Math.max(0, i - 40);
+      return (a > 0 ? '…' : '') + hay.slice(a, i + q.length + 70) + '…';
+    };
+    const seen = MONSTERS.filter((m) => g.bestiary.has(m.id));
+    seen.forEach((m, i) => {
+      const kills = g.bestiaryKills[m.id] ?? 0;
+      const tier2 = MONSTER_LORE2[m.id] && kills >= (m.boss ? 1 : 3) ? MONSTER_LORE2[m.id] : '';
+      const hay = `${m.name} ${m.flavor ?? ''} ${MONSTER_LORE[m.id] ?? ''} ${tier2}`;
+      if (hay.toLowerCase().includes(q)) out.push({ tab: 'bestiary', sel: i, section: 'Bestiary', label: m.name, snippet: snip(hay) });
+    });
+    GODS.forEach((gd, i) => {
+      const hay = `${gd.name} ${gd.title} ${gd.desc} ${gd.likes} ${GOD_LORE[gd.id] ?? ''}`;
+      if (hay.toLowerCase().includes(q)) out.push({ tab: 'faiths', sel: i, section: 'Faiths', label: gd.name, snippet: snip(hay) });
+    });
+    const unlocked = CHRONICLE.filter((e) => this.chronicleUnlocked(e));
+    unlocked.forEach((e, i) => {
+      const hay = `${e.title} ${e.text}`;
+      if (hay.toLowerCase().includes(q)) out.push({ tab: 'chronicle', sel: i, section: 'Chronicle', label: e.title, snippet: snip(hay) });
+    });
+    const r = RACES.find((x) => x.id === g.player?.raceId);
+    const c = CLASSES.find((x) => x.id === g.player?.classId);
+    for (const o of [r ? { n: r.name, t: `${r.desc} ${RACE_LORE[r.id] ?? ''}` } : null, c ? { n: c.name, t: `${c.desc} ${CLASS_LORE[c.id] ?? ''}` } : null]) {
+      if (o && `${o.n} ${o.t}`.toLowerCase().includes(q)) out.push({ tab: 'origins', sel: 0, section: 'Origins', label: o.n, snippet: snip(o.t) });
+    }
+    return out;
+  }
+
   showCodex(): void {
     this.mode = 'codex';
     const g = this.game;
+    if (this.codexSearch !== null) {
+      const matches = this.searchMatches();
+      this.codexSel = Math.max(0, Math.min(this.codexSel, matches.length - 1));
+      const list = matches.length
+        ? matches.map((m, i) => `<div class="${i === this.codexSel ? 'sel' : ''}" data-i="${i}">
+            <span style="color:#8a94b0;font-size:11px">${m.section}</span> ${m.label}</div>`).join('')
+        : `<div style="opacity:.5">${this.codexSearch ? 'Nothing you know of matches.' : 'Type to search everything you know.'}</div>`;
+      const cur = matches[this.codexSel];
+      this.show(`
+        <div class="panel" style="width:820px; min-height:440px;">
+          <h2>The Delver's Codex — Search</h2>
+          <p class="hint" style="text-align:left;margin:0 0 10px">query: <b style="color:#e8c860">${this.codexSearch || '…'}</b>
+            &nbsp;·&nbsp; type to refine · <span class="key">↑↓</span> select · <span class="key">Enter</span> open · <span class="key">Esc</span> cancel</p>
+          <div class="cx-split">
+            <div class="inv-list cx-list">${list}</div>
+            <div class="cx-detail">${cur ? `<h3>${cur.label}</h3><p class="ex-fla">${cur.snippet}</p>` : ''}</div>
+          </div>
+        </div>`);
+      this.overlay.querySelectorAll('.cx-list [data-i]').forEach((el) => {
+        el.addEventListener('click', () => {
+          this.codexSel = Number((el as HTMLElement).dataset.i);
+          this.openSearchResult();
+        });
+      });
+      return;
+    }
     const tabBtn = (id: typeof this.codexTab, label: string, key: string): string =>
       `<span class="cx-tab ${this.codexTab === id ? 'on' : ''}" data-tab="${id}"><span class="key">${key}</span> ${label}</span>`;
     const tabs = `${tabBtn('bestiary', 'Bestiary', '1')} ${tabBtn('faiths', 'Faiths', '2')} ${tabBtn('chronicle', 'Chronicle', '3')} ${tabBtn('origins', 'Origins', '4')}`;
     let body = '';
     if (this.codexTab === 'bestiary') {
-      let seen = MONSTERS.filter((m) => g.bestiary.has(m.id));
-      if (this.codexSearch) {
-        const q = this.codexSearch.toLowerCase();
-        const filtered = seen.filter((m) => m.name.toLowerCase().includes(q));
-        if (filtered.length) seen = filtered;
-      }
+      const seen = MONSTERS.filter((m) => g.bestiary.has(m.id));
       const total = MONSTERS.filter((m) => m.weight > 0 || m.boss).length;
       if (!seen.length) {
         body = `<p class="flavor">Nothing catalogued yet. Meet the dark; it is eager to be introduced.</p>`;
@@ -305,9 +361,7 @@ export class UI {
             <div class="inv-list cx-list">${list}</div>
             <div class="cx-detail">${stats}${lore ? `<p class="ex-lore">${lore}</p>` : ''}${deeper}</div>
           </div>
-          <p class="hint">${this.codexSearch !== null
-            ? `search: <b style="color:#e8c860">${this.codexSearch || '…'}</b> (type to filter, <span class="key">Enter</span> done)`
-            : `${seen.length}/${total} catalogued (knowledge survives death) · <span class="key">↑↓</span> browse · <span class="key">/</span> search`}</p>`;
+          <p class="hint">${seen.length}/${total} catalogued (knowledge survives death) · <span class="key">↑↓</span> browse · <span class="key">/</span> search all</p>`;
       }
     } else if (this.codexTab === 'faiths') {
       const gods = GODS;
@@ -357,7 +411,7 @@ export class UI {
         <h2>The Delver's Codex</h2>
         <div class="cx-tabs">${tabs}</div>
         ${body}
-        <p class="hint"><span class="key">1–4</span> sections · <span class="key">↑↓</span> browse · <span class="key">Esc</span> close</p>
+        <p class="hint"><span class="key">1–4</span> sections · <span class="key">↑↓</span> browse · <span class="key">/</span> search all · <span class="key">Esc</span> close</p>
       </div>`);
     this.overlay.querySelectorAll('.cx-tab').forEach((el) => {
       el.addEventListener('click', () => {
@@ -372,6 +426,17 @@ export class UI {
         this.showCodex();
       });
     });
+  }
+
+  openSearchResult(): void {
+    const matches = this.searchMatches();
+    const m = matches[this.codexSel];
+    this.codexSearch = null;
+    if (m) {
+      this.codexTab = m.tab;
+      this.codexSel = m.sel;
+    }
+    this.showCodex();
   }
 
   openCodexAt(monsterId: string): void {
@@ -418,9 +483,23 @@ export class UI {
 
   codexKey(k: string): void {
     if (this.codexSearch !== null) {
-      if (k === 'Enter' || k === 'Escape') {
-        if (k === 'Escape') this.codexSearch = null;
-        else this.codexSearch = this.codexSearch || null;
+      if (k === 'Escape') {
+        this.codexSearch = null;
+        this.codexSel = 0;
+        this.showCodex();
+        return;
+      }
+      if (k === 'Enter') {
+        this.openSearchResult();
+        return;
+      }
+      if (k === 'ArrowDown') {
+        this.codexSel++;
+        this.showCodex();
+        return;
+      }
+      if (k === 'ArrowUp') {
+        this.codexSel = Math.max(0, this.codexSel - 1);
         this.showCodex();
         return;
       }
@@ -430,14 +509,14 @@ export class UI {
         this.showCodex();
         return;
       }
-      if (k.length === 1 && /[a-z -]/i.test(k)) {
+      if (k.length === 1 && /[a-z0-9 '-]/i.test(k)) {
         this.codexSearch += k.toLowerCase();
         this.codexSel = 0;
         this.showCodex();
       }
       return;
     }
-    if (k === '/' && this.codexTab === 'bestiary') {
+    if (k === '/') {
       this.codexSearch = '';
       this.codexSel = 0;
       this.showCodex();
