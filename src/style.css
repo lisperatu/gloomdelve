@@ -224,3 +224,24 @@ html, body {
 .hall-table th { color: var(--ink-dim); text-align: left; font-weight: 400; font-size: 12px;
   letter-spacing: 1px; border-bottom: 1px solid var(--panel-edge); padding: 4px 8px; }
 .hall-table td { padding: 5px 8px; border-bottom: 1px solid #17131f; }
+
+/* ---------- cinematic title ---------- */
+.title-hero {
+  width: min(94vw, 1040px); height: min(88vh, 720px);
+  background-size: cover; background-position: center 30%;
+  border: 1px solid #2a2338; border-radius: 12px;
+  box-shadow: 0 0 90px rgba(0,0,0,.95), 0 0 40px rgba(138,108,240,.08);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: heroIn 1.4s ease-out;
+}
+@keyframes heroIn { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: none; } }
+.title-body { text-align: center; padding: 0 48px 44px; max-width: 780px; }
+.title-body h1 {
+  font-family: Georgia, serif; font-size: 64px; letter-spacing: 14px; color: #ede4d2;
+  text-shadow: 0 0 30px rgba(155,28,46,.9), 0 0 80px rgba(155,28,46,.4), 0 2px 6px #000;
+}
+.title-body .tag { color: #b8a8c8; letter-spacing: 6px; font-size: 14px; margin: 8px 0 16px;
+  text-shadow: 0 1px 4px #000; }
+.title-body .flavor { color: #cfc6b4; font-style: italic; line-height: 1.6; font-size: 15.5px;
+  text-shadow: 0 1px 4px #000, 0 0 12px rgba(0,0,0,.8); margin-bottom: 14px; }
+.title-body .hint { color: #a89c88; font-size: 15px; text-shadow: 0 1px 3px #000; }

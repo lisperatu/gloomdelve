@@ -60,14 +60,17 @@ export class UI {
       'title6.png', 'title7.png', 'title8.png', 'title9.png', 'title10.png'];
     const art = arts[Math.floor(Math.random() * arts.length)];
     this.show(`
-      <div class="panel" style="text-align:center; max-width:760px;">
-        <img class="titleart" src="${import.meta.env.BASE_URL}art/${art}" onerror="this.src=import.meta.env.BASE_URL+'art/title.png'" alt="" />
-        <h1>GLOOMDELVE</h1>
-        <div class="tag">DEPTHS OF THE UNLIGHT</div>
-        <p class="flavor">Twenty floors below the world, the Unlight Sovereign sits a throne of frozen shadow,
-        and every grave between here and there is merely a waiting room.<br/>
-        Descend. Pledge your soul to whatever listens. Come back crowned — or not at all.</p>
-        <p class="hint">${hint}</p>
+      <div class="title-hero" style="background-image:
+        linear-gradient(180deg, rgba(5,4,8,.25) 0%, rgba(5,4,8,.05) 35%, rgba(5,4,8,.88) 78%, #050408 100%),
+        url('${import.meta.env.BASE_URL}art/${art}')">
+        <div class="title-body">
+          <h1>GLOOMDELVE</h1>
+          <div class="tag">· DEPTHS OF THE UNLIGHT ·</div>
+          <p class="flavor">Twenty floors below the world, the Unlight Sovereign sits a throne of frozen shadow,
+          and every grave between here and there is merely a waiting room.<br/>
+          Descend. Pledge your soul to whatever listens. Come back crowned — or not at all.</p>
+          <p class="hint">${hint}</p>
+        </div>
       </div>`, true);
   }
 
