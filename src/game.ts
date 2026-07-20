@@ -5,7 +5,7 @@ import {
   type Player, type Status, type StatusKind,
 } from './types';
 import {
-  ARMORS, BRANCH_BY_ID, CLASSES, GODS, MAX_DEPTH, MONSTER_BY_ID, RACES,
+  ARMORS, BRANCH_BY_ID, BRANCH_PAIRS, CLASSES, GODS, MAX_DEPTH, MONSTER_BY_ID, RACES,
   STRATA, WEAPONS, genItem, itemName, makeIdentify, mkItem, stratumFor,
   type AbilityDef, type ClassDef, type Identify, type RaceDef,
 } from './data';
@@ -43,6 +43,8 @@ export class Game {
   branch: string | null = null;
   branchPos = 0;
   branchesDone: string[] = [];
+  runBranches: string[] = [];
+  foundUniques = new Set<string>();
   hpAcc = 0;
   mpAcc = 0;
   dirty = true; // HUD refresh flag
@@ -107,7 +109,7 @@ export class Game {
         seenStrata: [...this.seenStrata], seenBosses: [...this.seenBosses],
         bestiary: [...this.bestiary], bestiaryKills: this.bestiaryKills,
         branch: this.branch, branchPos: this.branchPos, branchesDone: this.branchesDone,
-        whispersFired: this.whispersFired,
+        runBranches: this.runBranches, whispersFired: this.whispersFired, foundUniques: [...this.foundUniques],
         msgs: this.msgs.slice(-30),
       };
       localStorage.setItem('gloomdelve-save', JSON.stringify(data));
@@ -162,6 +164,9 @@ export class Game {
       this.branchPos = d.branchPos ?? 0;
       this.branchesDone = d.branchesDone ?? [];
       this.whispersFired = d.whispersFired ?? [];
+      this.runBranches = d.runBranches ?? ['ossuary', 'silkfen', 'chains'];
+      this.foundUniques = new Set(d.foundUniques ?? []);
+      if (!this.player.charName) this.player.charName = 'the Delver';
       this.msgs = d.msgs;
       this.msg('You return to the dark, exactly where it left you.', C.god);
       this.updateFOV();
@@ -174,7 +179,7 @@ export class Game {
   }
 
   // ============================================== run setup
-  startRun(raceId: string, classId: string): void {
+  startRun(raceId: string, classId: string, charName = 'the Delver'): void {
     this.race = RACES.find((r) => r.id === raceId)!;
     this.cls = CLASSES.find((c) => c.id === classId)!;
     const str = 10 + this.race.str + (this.cls.statFav[0] === 'str' ? 1 : 0) + (this.cls.statFav[1] === 'str' ? 1 : 0);
@@ -189,6 +194,7 @@ export class Game {
       inventory: [], equip: { weapon: null, body: null, amulet: null, ring1: null, ring2: null },
       statuses: [], reprieveUsed: false, kills: 0, turns: 0,
       name: `${this.race.name.replace(/^The /, '')} ${this.cls.name}`,
+      charName,
     };
     const kit = this.cls.kit;
     if (kit.weapon) {
@@ -198,6 +204,7 @@ export class Game {
     if (kit.body) this.player.equip.body = mkItem('armor', kit.body);
     for (const p of kit.potions ?? []) this.player.inventory.push(mkItem('potion', p, { qty: 2 }));
     for (const s of kit.scrolls ?? []) this.player.inventory.push(mkItem('scroll', s, { qty: 2 }));
+    this.runBranches = BRANCH_PAIRS.map((pair) => this.rng.pick(pair));
     this.newLevel(1);
     this.msg(`You are ${this.player.name}. The earth swallows you whole.`, C.bold);
     this.msg('Somewhere below, the Unlight Sovereign waits on its throne. Descend. (? for help)', C.god);
@@ -206,7 +213,11 @@ export class Game {
   newLevel(depth: number): void {
     this.depth = depth;
     this.branch = null;
-    const gen = generateLevel(depth, this.rng, this.race?.luck ?? 0, { doneBranches: new Set(this.branchesDone) });
+    const gen = generateLevel(depth, this.rng, this.race?.luck ?? 0, {
+      doneBranches: new Set(this.branchesDone),
+      runBranches: new Set(this.runBranches.length ? this.runBranches : ['ossuary', 'silkfen', 'chains']),
+      uniques: this.foundUniques,
+    });
     this.level = gen.map;
     this.monsters = gen.monsters;
     this.items = gen.items;
@@ -279,7 +290,7 @@ export class Game {
 
   private makeBranchLevel(): void {
     const b = BRANCH_BY_ID.get(this.branch!)!;
-    const gen = generateLevel(this.effDepth(), this.rng, this.race?.luck ?? 0, { branch: b, branchPos: this.branchPos });
+    const gen = generateLevel(this.effDepth(), this.rng, this.race?.luck ?? 0, { branch: b, branchPos: this.branchPos, uniques: this.foundUniques });
     this.level = gen.map;
     this.monsters = gen.monsters;
     this.items = gen.items;
@@ -392,6 +403,7 @@ export class Game {
     if (w) {
       const d = WEAPONS.find((x) => x.id === w.id)!;
       min = d.dmg[0]; max = d.dmg[1] + w.plus;
+      if (d.range) { min = 1; max = Math.max(2, Math.ceil(max / 2)); } // bows are poor clubs
     } else if (this.cls.id === 'ascetic') {
       max = 4 + Math.floor(p.level * 1.5);
       min = 1 + Math.floor(p.level / 3);
@@ -623,7 +635,18 @@ export class Game {
       return;
     }
     if (this.player.godId) {
-      this.msg('Your soul is already claimed. The altar hisses at your approach.', C.god);
+      const old = GODS.find((x) => x.id === this.player.godId)!;
+      this.msg(`You forsake ${old.name} at a rival's altar. The dark goes very quiet.`, C.god);
+      this.addStatus(p, 'weak', 2, 80);
+      this.addStatus(p, 'hex', 2, 80);
+      this.damagePlayer(Math.floor(this.maxHpTot() * 0.15), 'necro', `${old.name}'s wrath`);
+      this.msg(`${old.name}'s wrath settles on you like ash. It will pass — slowly.`, C.bad);
+      if (this.over) return;
+      p.godId = god.id;
+      p.piety = 10;
+      sfx.play('god');
+      this.msg(`${god.name} accepts the apostate. Cautiously.`, C.god);
+      this.dirty = true;
       return;
     }
     p.godId = god.id;
@@ -656,7 +679,9 @@ export class Game {
     return (cap ? 'The ' : 'the ') + m.def.name;
   }
   srcName(m: Monster): string {
-    return m.def.boss ? m.def.name : `a ${m.def.name}`;
+    if (m.def.boss) return m.def.name;
+    const art = /^[aeiou]/i.test(m.def.name) ? 'an' : 'a';
+    return `${art} ${m.def.name}`;
   }
 
   playerAttack(m: Monster, mult = 1, silent = false): void {
@@ -746,7 +771,7 @@ export class Game {
       this.pushFx({ t: 'shake', mag: 8 });
       this.msg(`${m.def.name} is destroyed! The dungeon itself exhales.`, C.warn);
       for (let n = 0; n < 3; n++) {
-        const it = genItem(Math.min(MAX_DEPTH, this.effDepth() + 2), this.rng, 2 + (this.race.luck ?? 0));
+        const it = genItem(Math.min(MAX_DEPTH, this.effDepth() + 2), this.rng, 2 + (this.race.luck ?? 0), this.foundUniques);
         it.x = m.x; it.y = m.y;
         this.items.push(it);
       }
@@ -754,6 +779,9 @@ export class Game {
         charnelbride: () => [mkItem('armor', 'boneaegis', { plus: this.rng.int(0, 2), ego: 'vitality' })],
         mothersilk: () => [mkItem('ring', 'shadows'), mkItem('amulet', 'clarity')],
         gaoler: () => [mkItem('weapon', 'sunderblade', { plus: this.rng.int(2, 4), ego: 'vorpal' }), mkItem('scroll', 'encharmor', { qty: 2 })],
+        vestal: () => [mkItem('weapon', 'spear', { plus: this.rng.int(1, 3), ego: 'flaming' }), mkItem('potion', 'regen', { qty: 2 })],
+        taproot: () => [mkItem('armor', 'ringmail', { plus: this.rng.int(1, 2), ego: 'mire' }), mkItem('potion', 'might', { qty: 2 })],
+        reflection: () => [mkItem('amulet', 'whispers'), mkItem('ring', 'warding'), mkItem('scroll', 'enchweapon', { qty: 2 })],
       };
       const loot = branchLoot[m.def.id];
       if (loot) {
@@ -768,11 +796,12 @@ export class Game {
         sfx.play('win');
         Game.clearSave();
         this.syncMeta('win');
+        this.recordHall();
         this.msg('The Unlight gutters... and dies. Dawn, impossibly, reaches even here.', C.warn);
         return;
       }
     } else if (this.rng.chance(0.22 + (this.race.luck ?? 0) * 0.04)) {
-      const it = genItem(this.effDepth(), this.rng, this.race.luck ?? 0);
+      const it = genItem(this.effDepth(), this.rng, this.race.luck ?? 0, this.foundUniques);
       it.x = m.x; it.y = m.y;
       this.items.push(it);
     }
@@ -896,6 +925,7 @@ export class Game {
       sfx.play('death');
       Game.clearSave();
       this.syncMeta('death');
+      this.recordHall();
       this.msg(`You are slain by ${source}...`, C.bad);
       this.pushFx({ t: 'flash', color: '#9b1c2e' });
     }
@@ -927,6 +957,69 @@ export class Game {
     for (const m of this.monsters) {
       if (!m.awake && this.dist(x, y, m.x, m.y) <= r && this.rng.chance(0.5)) m.awake = true;
     }
+  }
+
+  fireRanged(target: Monster): boolean {
+    const p = this.player;
+    const w = p.equip.weapon;
+    const def = w ? WEAPONS.find((x) => x.id === w.id) : null;
+    if (!w || !def?.range) {
+      this.msg('You have nothing to shoot with.', C.info);
+      return false;
+    }
+    const d = this.dist(p.x, p.y, target.x, target.y);
+    if (d > def.range) { this.msg('Out of range.', C.info); return false; }
+    if (!this.losClear(p.x, p.y, target.x, target.y)) { this.msg('No clear line.', C.info); return false; }
+    const sleeping = !target.awake;
+    target.awake = true;
+    const acc = 3 + Math.floor(p.level * 0.7) + Math.floor((p.dex - 10) / 2) + def.acc + w.plus;
+    const ev = sleeping ? -5 : target.def.ev + (d >= 5 ? 2 : 0); // long shots are harder
+    this.pushFx({ t: 'beam', x0: p.x, y0: p.y, x1: target.x, y1: target.y, color: '#d8cfba' });
+    this.noise(p.x, p.y, 5);
+    if (!this.rng.chance(Math.min(0.95, Math.max(0.15, 0.72 + (acc - ev) * 0.045)))) {
+      this.msg(`Your shot misses ${this.mn(target)}.`, C.info);
+      sfx.play('miss');
+      this.advanceWorld();
+      return true;
+    }
+    sfx.play('hit');
+    let dmg = this.rng.int(def.dmg[0], def.dmg[1] + w.plus) + Math.floor((p.dex - 10) / 2);
+    if (this.hasStatus('might')) dmg += 2;
+    if (sleeping) dmg = Math.floor(dmg * 2.5);
+    if (w.ego === 'flaming') this.damageMonster(target, this.rng.int(2, 5), 'fire', true);
+    if (w.ego === 'frost') {
+      this.damageMonster(target, this.rng.int(2, 5), 'cold', true);
+      if (this.rng.chance(0.3)) this.addStatus(target, 'slow', 1, 4);
+    }
+    if (w.ego === 'venom' && !target.def.resist?.includes('poison') && this.rng.chance(0.5)) this.addStatus(target, 'poison', 2, 5);
+    this.msg(`Your shot strikes ${this.mn(target)} for ${dmg}.`, C.bold);
+    this.damageMonster(target, Math.max(1, dmg), 'phys');
+    this.advanceWorld();
+    return true;
+  }
+
+  score(): number {
+    const p = this.player;
+    return this.depth * 100 + p.level * 50 + p.kills * 10 + p.gold +
+      this.branchesDone.length * 300 + (this.over === 'win' ? 5000 : 0);
+  }
+
+  static loadHall(): { name: string; title: string; outcome: string; depth: number; level: number; score: number; date: string; cause: string }[] {
+    try { return JSON.parse(localStorage.getItem('gloomdelve-hall') ?? '[]'); } catch { return []; }
+  }
+
+  recordHall(): void {
+    try {
+      const hall = Game.loadHall();
+      hall.push({
+        name: this.player.charName || 'the Delver', title: this.player.name,
+        outcome: this.over === 'win' ? 'ASCENDED' : `slain by ${this.deathCause}`,
+        depth: this.depth, level: this.player.level, score: this.score(),
+        date: new Date().toISOString().slice(0, 10), cause: this.deathCause,
+      });
+      hall.sort((a, b) => b.score - a.score);
+      localStorage.setItem('gloomdelve-hall', JSON.stringify(hall.slice(0, 50)));
+    } catch { /* ignore */ }
   }
 
   // ============================================== items
@@ -1521,6 +1614,17 @@ export class Game {
       this.stepAway(m);
       return;
     }
+    // survival instinct: badly hurt thinking creatures retreat
+    if (!m.def.boss && !m.def.mindless && m.hp < m.maxHp * 0.25 && this.rng.chance(0.65)) {
+      if (L.visible[idx(m.x, m.y, L.w)] && this.rng.chance(0.25)) this.msg(`${this.mn(m, true)} tries to escape!`, C.info);
+      this.stepAway(m);
+      return;
+    }
+    // kiting: ranged attackers back off from melee range to shoot
+    if (m.def.ranged && d <= 1 && !m.def.boss && !m.def.mindless && this.rng.chance(0.5)) {
+      this.stepAway(m);
+      return;
+    }
     // melee
     if (d <= 1) {
       // prefer hitting adjacent ally sometimes
@@ -1615,7 +1719,10 @@ export class Game {
       if (this.monsterAt(nx, ny)) continue;
       if (this.player.x === nx && this.player.y === ny) continue;
       const dd = this.distMap[idx(nx, ny, L.w)];
-      if (dd < bestD) { bestD = dd; best = [nx, ny]; }
+      const flanks = this.dist(nx, ny, this.player.x, this.player.y) === 1;
+      if (dd < bestD || (dd === bestD && best !== null && flanks && this.dist(best[0], best[1], this.player.x, this.player.y) > 1)) {
+        bestD = dd; best = [nx, ny];
+      }
     }
     if (!best) return;
     const t = this.tileAt(best[0], best[1]);
@@ -1658,11 +1765,16 @@ export class Game {
 
   // ============================================== QoL: autoexplore & rest
   autoExplore(): void {
+    const path: [number, number][] = [[this.player.x, this.player.y]];
+    const emitTrail = (): void => {
+      if (path.length > 1) this.pushFx({ t: 'trail', points: path });
+    };
     for (let step = 0; step < 80; step++) {
       if (this.over) return;
       if (this.visibleMonsters().some((m) => m.awake)) {
         if (step === 0) this.msg('Not with enemies in sight.', C.info);
         else this.msg('You stop: something hunts nearby.', C.warn);
+        emitTrail();
         return;
       }
       const L = this.level;
@@ -1675,6 +1787,7 @@ export class Game {
       }
       if (target < 0) {
         this.msg('This floor holds no more secrets. (> to descend)', C.good);
+        emitTrail();
         return;
       }
       const back = bfsDistance(L, target % L.w, Math.floor(target / L.w));
@@ -1686,12 +1799,14 @@ export class Game {
         if (this.monsterAt(nx, ny)) continue;
         if (back[idx(nx, ny, L.w)] < bestD) { bestD = back[idx(nx, ny, L.w)]; best = [nx, ny]; }
       }
-      if (!best) return;
+      if (!best) { emitTrail(); return; }
       const before = this.items.filter((i) => i.x === this.player.x && i.y === this.player.y).length;
-      if (!this.tryMove(best[0] - this.player.x, best[1] - this.player.y)) return;
+      if (!this.tryMove(best[0] - this.player.x, best[1] - this.player.y)) { emitTrail(); return; }
+      path.push([this.player.x, this.player.y]);
       const here = this.items.filter((i) => i.x === this.player.x && i.y === this.player.y).length;
-      if (here > 0 && before === 0) return; // stop on loot
+      if (here > 0 && before === 0) { emitTrail(); return; } // stop on loot
     }
+    emitTrail();
   }
 
   rest(): void {

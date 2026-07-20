@@ -84,6 +84,7 @@ export interface MonsterDef {
   boss?: boolean;
   sleepless?: boolean;
   flees?: boolean;
+  mindless?: boolean; // never flees, never kites
   branch?: string;
   resist?: DamageType[];
   vuln?: DamageType[];
@@ -113,6 +114,7 @@ export interface Item {
   qty: number;
   plus: number;
   ego: string | null;
+  unique?: string; // named artifact
   x: number; // -1 when carried
   y: number;
 }
@@ -150,6 +152,7 @@ export interface Player {
   kills: number;
   turns: number;
   name: string;
+  charName: string;
 }
 
 // ---------- fx / messages ----------
@@ -158,7 +161,8 @@ export type FX =
   | { t: 'shake'; mag: number }
   | { t: 'burst'; x: number; y: number; color: string; n: number }
   | { t: 'beam'; x0: number; y0: number; x1: number; y1: number; color: string }
-  | { t: 'flash'; color: string };
+  | { t: 'flash'; color: string }
+  | { t: 'trail'; points: [number, number][] };
 
 export interface Msg {
   text: string;

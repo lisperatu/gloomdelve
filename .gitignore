@@ -3,3 +3,4 @@ dist/
 *.png
 !public/art/*.png
 .playwright-mcp/
+.sim.cjs

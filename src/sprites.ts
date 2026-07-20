@@ -914,6 +914,7 @@ const WEAPON_SPRITE: Record<string, string> = {
   dagger: 'dagger', club: 'mace', shortsword: 'sword', spear: 'spear', mace: 'mace',
   longsword: 'sword', waraxe: 'axe', glaive: 'spear', greatsword: 'sword',
   doommaul: 'mace', sunderblade: 'sword',
+  sling: 'bow', shortbow: 'bow', gravebow: 'bow',
 };
 
 const ARMOR_TINT: Record<string, string> = {

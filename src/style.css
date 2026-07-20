@@ -217,3 +217,10 @@ html, body {
 .cx-detail .ex-lore { color: #a89cc4; font-style: italic; border-left: 2px solid #3a2f52; padding-left: 12px; margin-top: 10px; }
 .cx-detail .ex-head { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
 .cx-detail .ex-head img { width: 48px; height: 48px; image-rendering: pixelated; }
+
+.inv-group { color: var(--gold); font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+  margin: 8px 0 2px; border-bottom: 1px solid #241e32; padding-bottom: 2px; }
+.hall-table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin-top: 8px; }
+.hall-table th { color: var(--ink-dim); text-align: left; font-weight: 400; font-size: 12px;
+  letter-spacing: 1px; border-bottom: 1px solid var(--panel-edge); padding: 4px 8px; }
+.hall-table td { padding: 5px 8px; border-bottom: 1px solid #17131f; }

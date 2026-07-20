@@ -4,12 +4,12 @@ import {
   itemName, type AbilityDef,
 } from './data';
 import { itemSprite, monsterSprite as monsterSpriteName, playerDollURL, spriteURL } from './sprites';
-import { CHRONICLE, EGO_LORE, GOD_LORE, ITEM_LORE, MONSTER_LORE, MONSTER_LORE2, RACE_LORE, CLASS_LORE } from './lore';
+import { CHRONICLE, EGO_LORE, GOD_LORE, ITEM_LORE, MONSTER_LORE, MONSTER_LORE2, RACE_LORE, CLASS_LORE, UNIQUE_LORE } from './lore';
 import { MONSTERS, MONSTER_BY_ID } from './data';
 import { C, Game } from './game';
 import type { Renderer } from './render';
 
-type Mode = 'title' | 'race' | 'class' | 'play' | 'inv' | 'help' | 'target' | 'dead' | 'win' | 'examine' | 'codex';
+type Mode = 'title' | 'race' | 'class' | 'name' | 'play' | 'inv' | 'help' | 'target' | 'dead' | 'win' | 'examine' | 'codex' | 'hall';
 
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
 
@@ -25,7 +25,7 @@ export class UI {
   exX = 0;
   exY = 0;
   exPanel: HTMLDivElement | null = null;
-  pendingAbility: { ab: AbilityDef; source: 'class' | 'god' } | null = null;
+  pendingAbility: { ab: AbilityDef; source: 'class' | 'god' | 'fire' } | null = null;
   overlay = document.getElementById('overlay') as HTMLDivElement;
   hud = document.getElementById('hud') as HTMLDivElement;
   log = document.getElementById('log') as HTMLDivElement;
@@ -54,8 +54,8 @@ export class UI {
     this.mode = 'title';
     const hasSave = Game.hasSave();
     const hint = hasSave
-      ? `<span class="key">Enter</span> continue your descent &nbsp;·&nbsp; <span class="key">n</span> abandon it and begin anew`
-      : `<span class="key">Enter</span> to descend &nbsp;·&nbsp; <span class="key">?</span> in-game for help`;
+      ? `<span class="key">Enter</span> continue your descent &nbsp;·&nbsp; <span class="key">n</span> new &nbsp;·&nbsp; <span class="key">h</span> hall of fame`
+      : `<span class="key">Enter</span> to descend &nbsp;·&nbsp; <span class="key">h</span> hall of fame`;
     const arts = ['title.png', 'title2.png', 'title3.png', 'title4.png', 'title5.png',
       'title6.png', 'title7.png', 'title8.png', 'title9.png', 'title10.png'];
     const art = arts[Math.floor(Math.random() * arts.length)];
@@ -111,16 +111,48 @@ export class UI {
     this.overlay.querySelectorAll('.card').forEach((el) => {
       el.addEventListener('click', () => {
         this.classSel = Number((el as HTMLElement).dataset.i);
-        this.startGame();
+        this.showNamePrompt();
       });
     });
   }
 
-  startGame(): void {
-    this.game.startRun(RACES[this.raceSel].id, CLASSES[this.classSel].id);
+  showNamePrompt(): void {
+    this.mode = 'name';
+    const defaults = ['Vesk', 'Moraine', 'Oddleif', 'Cinder', 'Yarrow', 'Hesse', 'Bramble', 'Ilva', 'Corvus', 'Mara'];
+    const suggestion = defaults[Math.floor(Math.random() * defaults.length)];
+    this.show(`
+      <div class="panel" style="text-align:center; max-width:520px;">
+        <h2>Name your Delver</h2>
+        <p class="flavor">${RACES[this.raceSel].name} ${CLASSES[this.classSel].name}. The ledger will want a name.</p>
+        <input id="nameinp" maxlength="24" placeholder="${suggestion}" autocomplete="off"
+          style="width:80%;padding:10px 14px;font-size:18px;background:#16121e;border:1px solid #3a2f52;border-radius:6px;color:#e8e0d0;text-align:center;font-family:Georgia,serif" />
+        <p class="hint"><span class="key">Enter</span> descend · <span class="key">Esc</span> back</p>
+      </div>`, true);
+    setTimeout(() => (document.getElementById('nameinp') as HTMLInputElement)?.focus(), 30);
+  }
+
+  startGame(name?: string): void {
+    this.game.startRun(RACES[this.raceSel].id, CLASSES[this.classSel].id, name || 'the Delver');
     this.mode = 'play';
     this.hide();
     this.refreshHud();
+  }
+
+  showHall(): void {
+    this.mode = 'hall';
+    const hall = Game.loadHall();
+    const rows = hall.slice(0, 15).map((h, i) => `
+      <tr><td>${i + 1}</td><td style="color:var(--bone)">${h.name}</td><td>${h.title}</td>
+      <td style="color:${h.outcome === 'ASCENDED' ? 'var(--gold)' : 'var(--ink-dim)'}">${h.outcome}</td>
+      <td>${h.depth}</td><td>${h.level}</td><td style="color:var(--gold)">${h.score}</td></tr>`).join('');
+    this.show(`
+      <div class="panel" style="min-width:720px;">
+        <h2>Hall of the Fallen & the Crowned</h2>
+        ${hall.length ? `<table class="hall-table">
+          <tr><th>#</th><th>name</th><th>calling</th><th>fate</th><th>depth</th><th>lvl</th><th>score</th></tr>
+          ${rows}</table>` : '<p class="flavor">No delver has yet been entered in the ledger. Be the first — one way or the other.</p>'}
+        <p class="hint"><span class="key">Esc</span> back</p>
+      </div>`, true);
   }
 
   showHelp(): void {
@@ -139,6 +171,7 @@ export class UI {
           <div><span class="key">p</span> pray at altar</div>
           <div><span class="key">o</span> auto-explore</div>
           <div><span class="key">r</span> rest</div>
+          <div><span class="key">f</span> fire ranged weapon</div>
           <div><span class="key">x</span> examine anything</div>
           <div><span class="key">c</span> codex (lore & bestiary)</div>
           <div><span class="key">Tab</span> cycle targets</div>
@@ -160,18 +193,43 @@ export class UI {
       ['weapon', p.equip.weapon], ['body', p.equip.body], ['amulet', p.equip.amulet],
       ['ring', p.equip.ring1], ['ring', p.equip.ring2],
     ];
+    const statOf = (it: Item): string => {
+      if (it.kind === 'weapon') {
+        const d = WEAPONS.find((w) => w.id === it.id)!;
+        return `${d.dmg[0]}–${d.dmg[1] + it.plus}${d.range ? ` rng${d.range}` : ''}`;
+      }
+      if (it.kind === 'armor') {
+        const d = ARMORS.find((a) => a.id === it.id)!;
+        return `AC${d.ac + it.plus}${d.evPen ? ` EV${d.evPen}` : ''}`;
+      }
+      return '';
+    };
     const eq = eqEntries.map(([slot, it], i) => {
       const nm = it ? itemName(it, g.ident) : '<span style="opacity:.4">—</span>';
-      return `<div><span class="key">${i + 1}</span> <span class="eq">${slot.padEnd(7, ' ')}</span> ${nm}</div>`;
+      const st = it ? statOf(it) : '';
+      return `<div><span class="key">${i + 1}</span> <span class="eq">${slot.padEnd(7, ' ')}</span> ${nm}${st ? ` <span style="color:#8d8578;font-size:12px">${st}</span>` : ''}</div>`;
     }).join('');
-    const inv = p.inventory.length
-      ? p.inventory.map((it, i) => {
-        const [spr, col] = itemSprite(it);
-        const sel = i === this.invSel ? 'sel' : '';
-        const qty = it.qty > 1 ? ` ×${it.qty}` : '';
-        return `<div class="${sel}" data-i="${i}"><span class="key">${LETTERS[i]}</span> <img class="spr" src="${spriteURL(spr, col)}" alt=""> ${itemName(it, g.ident)}${qty}</div>`;
-      }).join('')
-      : '<div style="opacity:.5">Your pack is empty.</div>';
+    const GROUPS: [string, string[]][] = [
+      ['Arms & Armor', ['weapon', 'armor']],
+      ['Jewelry', ['ring', 'amulet']],
+      ['Potions', ['potion']],
+      ['Scrolls', ['scroll']],
+    ];
+    let inv = '';
+    for (const [label, kinds] of GROUPS) {
+      const rows = p.inventory
+        .map((it, i) => ({ it, i }))
+        .filter(({ it }) => kinds.includes(it.kind))
+        .map(({ it, i }) => {
+          const [spr, col] = itemSprite(it);
+          const sel = i === this.invSel ? 'sel' : '';
+          const qty = it.qty > 1 ? ` ×${it.qty}` : '';
+          const nm = it.unique ? `<span style="color:#e0a050">${itemName(it, g.ident)}</span>` : itemName(it, g.ident);
+          return `<div class="${sel}" data-i="${i}"><span class="key">${LETTERS[i]}</span> <img class="spr" src="${spriteURL(spr, col)}" alt=""> ${nm}${qty}</div>`;
+        }).join('');
+      if (rows) inv += `<div class="inv-group">${label}</div>${rows}`;
+    }
+    if (!inv) inv = '<div style="opacity:.5">Your pack is empty.</div>';
     let detail = '';
     if (this.invSel >= 0 && p.inventory[this.invSel]) {
       const it = p.inventory[this.invSel];
@@ -198,12 +256,14 @@ export class UI {
   describe(it: Item): string {
     const g = this.game;
     const known = g.ident.known.has(`${it.kind}:${it.id}`);
-    const loreLine = known ? (ITEM_LORE[`${it.kind}:${it.id}`] ?? (it.ego ? EGO_LORE[it.ego] : undefined)) : undefined;
+    const loreLine = it.unique ? UNIQUE_LORE[it.unique]
+      : known ? (ITEM_LORE[`${it.kind}:${it.id}`] ?? (it.ego ? EGO_LORE[it.ego] : undefined)) : undefined;
     const withLore = (base: string): string => loreLine ? `${base}<br><i style="color:#a89cc4">${loreLine}</i>` : base;
     switch (it.kind) {
       case 'weapon': {
         const d = WEAPONS.find((w) => w.id === it.id)!;
-        return withLore(`Damage ${d.dmg[0]}–${d.dmg[1] + it.plus}, accuracy ${d.acc >= 0 ? '+' : ''}${d.acc + it.plus}.`);
+        const rangeNote = d.range ? ` Ranged (range ${d.range}, fires with f, uses DEX). Clumsy in melee.` : '';
+        return withLore(`Damage ${d.dmg[0]}–${d.dmg[1] + it.plus}, accuracy ${d.acc >= 0 ? '+' : ''}${d.acc + it.plus}.${rangeNote}`);
       }
       case 'armor': {
         const d = ARMORS.find((a) => a.id === it.id)!;
@@ -224,8 +284,8 @@ export class UI {
     this.show(`
       <div class="panel deathpanel" style="text-align:center;">
         <img class="titleart" src="${import.meta.env.BASE_URL}art/death.png" onerror="this.style.display='none'" alt="" />
-        <h1>YOU HAVE FALLEN</h1>
-        <div class="tag">SLAIN BY ${g.deathCause.toUpperCase()} · ${g.locationName().toUpperCase()}</div>
+        <h1>${(g.player.charName ?? 'THE DELVER').toUpperCase()} HAS FALLEN</h1>
+        <div class="tag">SLAIN BY ${g.deathCause.toUpperCase()} · ${g.locationName().toUpperCase()} · SCORE ${g.score()}</div>
         <table class="stats-table" style="margin:14px auto">
           <tr><td>Delver</td><td>${g.player.name}</td></tr>
           <tr><td>Level</td><td>${g.player.level}</td></tr>
@@ -236,7 +296,7 @@ export class UI {
         </table>
         <p class="flavor">The dungeon adds your name to its ledger — the ${meta.deaths}${['th','st','nd','rd'][((meta.deaths%100>10&&meta.deaths%100<14)?0:meta.deaths%10)]??'th'} entry in its pages.
         But the Codex survives you: everything you learned, the next delver knows. Knowledge is the one coin the dark cannot confiscate.</p>
-        <p class="hint"><span class="key">Enter</span> to delve again · <span class="key">c</span>odex persists</p>
+        <p class="hint"><span class="key">Enter</span> to delve again · your name is in the Hall of Fame (<span class="key">h</span> at title)</p>
       </div>`);
   }
 
@@ -247,7 +307,7 @@ export class UI {
       <div class="panel winpanel" style="text-align:center;">
         <img class="titleart" src="${import.meta.env.BASE_URL}art/win.png" onerror="this.style.display='none'" alt="" />
         <h1>THE UNLIGHT DIES</h1>
-        <div class="tag">THE THRONE STANDS EMPTY · THE CROWN IS YOURS</div>
+        <div class="tag">${(g.player.charName ?? 'THE DELVER').toUpperCase()} TAKES THE CROWN · SCORE ${g.score()}</div>
         <table class="stats-table" style="margin:14px auto">
           <tr><td>Delver</td><td>${g.player.name}</td></tr>
           <tr><td>Level</td><td>${g.player.level}</td></tr>
@@ -718,7 +778,7 @@ export class UI {
   }
 
   // ============================== targeting
-  beginTarget(ab: AbilityDef, source: 'class' | 'god'): void {
+  beginTarget(ab: AbilityDef, source: 'class' | 'god' | 'fire'): void {
     const g = this.game;
     this.targets = g.visibleMonsters().filter((m) =>
       g.dist(g.player.x, g.player.y, m.x, m.y) <= ab.range &&
@@ -743,13 +803,25 @@ export class UI {
     const t = this.targets[this.targetIdx];
     this.pendingAbility = null;
     this.mode = 'play';
-    if (t) this.game.useAbility(pa.ab, pa.source, t);
+    if (t) {
+      if (pa.source === 'fire') this.game.fireRanged(t);
+      else this.game.useAbility(pa.ab, pa.source, t);
+    }
     this.afterAction();
   }
 
   // ============================== input
   onKey(e: KeyboardEvent): void {
     const k = e.key;
+    if ((e.target as HTMLElement)?.tagName === 'INPUT') {
+      if (k === 'Enter') {
+        const inp = e.target as HTMLInputElement;
+        this.startGame(inp.value.trim() || inp.placeholder);
+      } else if (k === 'Escape') {
+        this.showClassSelect();
+      }
+      return;
+    }
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', ' '].includes(k)) e.preventDefault();
     switch (this.mode) {
       case 'title':
@@ -766,6 +838,13 @@ export class UI {
           Game.clearSave();
           this.showRaceSelect();
         }
+        if (k === 'h') this.showHall();
+        return;
+      case 'name':
+        if (k === 'Escape') this.showClassSelect();
+        return;
+      case 'hall':
+        if (k === 'Escape' || k === 'Enter' || k === 'h') this.showTitle();
         return;
       case 'race': {
         const i = LETTERS.indexOf(k);
@@ -908,6 +987,16 @@ export class UI {
       case 'r': g.rest(); break;
       case '?': this.showHelp(); return;
       case 'x': this.beginExamine(); return;
+      case 'f': {
+        const w = g.player.equip.weapon;
+        const wd = w ? WEAPONS.find((d) => d.id === w.id) : null;
+        if (wd?.range) {
+          this.beginTarget({ id: 'fire', name: 'Fire', cost: 0, desc: '', target: 'enemy', range: wd.range, unlock: 1 }, 'fire');
+        } else {
+          g.msg('You need a ranged weapon wielded to fire. (bows, slings)', C.info);
+        }
+        return;
+      }
       case 'c': this.codexSel = 0; this.showCodex(); return;
       default: {
         // ability hotkeys — but 1-5 are also movement on numpad; use code check
@@ -962,8 +1051,8 @@ export class UI {
       <div class="hud-head">
         <img class="doll" src="${playerDollURL(p.raceId, p.equip)}" alt="" />
         <div>
-          <h1>${p.name}</h1>
-          <div class="sub">${g.locationName()} · turn ${p.turns}</div>
+          <h1>${p.charName ?? p.name}</h1>
+          <div class="sub">${p.name} · ${g.locationName()} · turn ${p.turns}</div>
         </div>
       </div>
       ${bar('hp', Math.max(0, p.hp), g.maxHpTot(), `HP ${Math.max(0, p.hp)}/${g.maxHpTot()}`)}

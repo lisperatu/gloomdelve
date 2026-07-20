@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sim": "esbuild sim/sim.ts --bundle --format=cjs --platform=node --outfile=.sim.cjs --log-level=error && node .sim.cjs"
   },
   "devDependencies": {
     "typescript": "~5.6.3",

@@ -81,6 +81,18 @@ export const CHRONICLE: ChronicleEntry[] = [
     text: 'The Vault was not built to hold criminals. Read the cell doors: they lock from the outside AND the inside. When the Unlight took its throne, some of the things that had served the First Light could not bear to look at what it had become — and could not be trusted not to kneel to it either. They chose the chains. The Gaoler was their commander, and it holds the one post it could not assign: warden of the loyal. Its ledger records no releases because none of them has ever asked.',
   },
   {
+    id: 'vestal2', title: 'The Vigil of Tallow', unlock: { kind: 'boss', key: 'vestal' },
+    text: 'The night the sun was stolen, most of the world panicked. One woman in a hillside chapel did something more dangerous: she made a vow. One candle lit for the missing light, and none permitted to gutter until it returned. The chapel sank — vows of that weight do — and the Garden grew around her vigil, candle by candle, votary by votary. The Chronicle is careful here, because the arithmetic is uncomfortable: her candles are the only surface-light that has never once gone out since the theft. The Unlight has tried. The wax, rising like a patient tide, may be the dungeon\u2019s way of finishing what it cannot blow out.',
+  },
+  {
+    id: 'taproot2', title: 'What the Forests Want', unlock: { kind: 'boss', key: 'taproot' },
+    text: 'The Grave-Elves buried their forests out of mercy and assumed that was the end of it. But a forest is mostly root, and a root has exactly one instinct. The buried woods pooled everything — sap, patience, the elves\u2019 own interred wisdom — into a single Taproot and aimed it downward, toward the warmth every root can feel and no elf would name. The Chronicle\u2019s botanist is blunt: it was not digging toward the Unlight to attack it. Roots do not attack suns. They grow toward them. The forests intended to drink it, and nine generations of reaching had nearly arrived when you interrupted.',
+  },
+  {
+    id: 'reflection2', title: 'The Faces in the Cistern', unlock: { kind: 'boss', key: 'reflection' },
+    text: 'Mirrors below the world do not work the way they do above, because reflection requires light and the light down here has been inverted. What the Cistern\u2019s water shows is therefore not you — it is what the Unlight sees when it looks at you: the wanting, the hoarding, the version of you that descends for the crown and not the dawn. Every delver leaves one behind. The Pale Reflection is the anthology. The Chronicle\u2019s warning is underlined three times: it wears the faces of those who got furthest, and the reason it wears them is that the delvers who got furthest were the ones most like it.',
+  },
+  {
     id: 'ledger', title: '✝ What the Ledger Keeps', unlock: { kind: 'death' },
     text: 'The dungeon keeps a ledger of every delver it has ended, and the entries do not stop at the name. It records what you knew. This is why the Codex survives you when your body does not — knowledge is the one coin the dark cannot confiscate, and every delver who reads these notes inherits every delver who wrote in them. The Cartographer\'s hand, on the inside cover: "Die well. Write it down first."',
   },
@@ -149,6 +161,18 @@ export const MONSTER_LORE: Record<string, string> = {
   webweaver: 'Its silk is measured to your stride because the Mother has your measurements. She has everyone\'s. She took them generations ago, against the famine.',
   broodling: 'Mother says: eat your visitors. They are still learning the difference between visitors and stock, which is the only reason anything leaves the Silkfen.',
   mothersilk: 'She remembers the sky, and is provisioning against what the dark will eat when it runs out of everything else.',
+  waxwretch: 'The Vestal does not recruit. People come to hold a candle for someone they lost, and stay one hour too long. The Garden\u2019s wax is warm, and grief is tired.',
+  tallowhound: 'Bred from pyre hounds, gentled by candlelight. The wick in its spine was lit from the Vestal\u2019s first candle, which makes each one a walking piece of the original vow.',
+  flickerwisp: 'Candleflames are not supposed to be individuals. Nine generations of never going out gave some of them time to develop opinions, mostly about promotion.',
+  vestal: 'She lit the first candle the night the sun went missing, and the wax has risen past her waist.',
+  rootcrawler: 'The forests\u2019 sappers. Where the Weald grows grief, the Roots simply dig — and everything in their way is, botanically speaking, in their way.',
+  mournwillow: 'The graveside willows drank nine generations of funerals before following their congregations underground. Their grief is structural now, like heartwood.',
+  sapwraith: 'When a tree dies its sap keeps moving for days. The buried forests\u2019 sap has kept moving for nine generations, and it remembers every axe.',
+  taproot: 'The buried forests elected one root to keep digging, and fed it everything.',
+  mirrorshade: 'The Cistern\u2019s water remembers everyone who ever looked in. Some memories climb out. They are not hostile to you specifically — they are hostile to being a memory.',
+  glassgolem: 'The Cistern grows glass the way graves grow moss. The Cartographer\u2019s note: "It shows you at a worse angle. The horror is that the angle is accurate."',
+  stillwatcher: 'It floats beneath the surface matching faces, and it is very good at faces now. The Cartographer\u2019s advice: do not drink here, and above all, do not check your reflection to see why.',
+  reflection: 'Every delver who bent over the Cistern left one behind. It wears the ones that got furthest.',
   chainedpenitent: 'They chose the chains, which is the detail everyone misses. Each one holds its own key, swallowed, in the old fashion of oaths.',
   gaolwraith: 'A sentence, in both senses. It reads yours aloud as it kills you, and delvers who survived report the worst part: it was accurate.',
   ironwarden: 'Armor whose occupant was released for good behavior — the Vault\'s one recorded parole. The armor appealed the decision and remains at its post.',
@@ -170,6 +194,9 @@ export const MONSTER_LORE2: Record<string, string> = {
   charnelbride: 'Her veil, unwound, is a guest list — every delver she has filed, stitched in hair-fine bone thread, in order of arrival. The forty-first entry is circled. The Cartographer never explained the circle, and the Cartographer was the forty-first thing she filed.',
   mothersilk: 'In the deepest chamber of the Silkfen hangs one bundle she permits no broodling to touch — man-shaped, sky-blue silk, spun in a weave she has used exactly once. She wrapped something the day the Light was dragged past her fen. She has been keeping it fresh ever since. She does not think of it as evidence. She thinks of it as leverage.',
   gaoler: 'Its ledger\'s final page is pre-filled, in the oldest ink in the Vault: one empty cell, one name-blank, and a date the Cartographer identified as the day the Long Evening began. The Vault was commissioned BEFORE the theft. Someone ordered a cell built for a prisoner that did not exist yet, which means the crime was scheduled. The Gaoler guards the reservation.',
+  vestal: 'When she finally falls, every candle in the Garden gutters at once — and then relights, on its own, one heartbeat later. The vow no longer needs her; it has been load-bearing for generations, like the hymn in the Cloister. The Chronicle lists the things still holding the world up. It is a shorter list than anyone would like, and you have now met two of them.',
+  taproot: 'Its rings, counted, number nine generations exactly — but the innermost ring is charred. The Taproot did not start growing when the forests were buried. It started growing the night of the theft, from a seed that fell BELOW when the Light was dragged down. Whatever fruit a sun\u2019s seed bears at the bottom of the world, the forests knew about it before anyone, and said nothing.',
+  reflection: 'Slain, it does not shatter — it settles, like water finding level, and for a moment shows one final face: not yours, and not any delver\u2019s. A face looking down from above the frame, the way you look into a well. The Cistern\u2019s water reflects what the Unlight sees, and in that last moment it reflected whoever it is the Unlight looks up at. The Chronicle does not speculate further, and for the Chronicle, that is a scream.',
   ossuarycolossus: 'Disassembled, its femurs are found to be numbered — but not sequentially. They are page references. The Colossus is an index of the Ossuary\'s collection, and it attacked you for the reason any librarian would: you were about to be shelved out of order.',
   siren: 'Her counter-melody, transcribed, is a lullaby every delver recognizes from childhood — words changed, tune identical. It predates the Cloister. Mothers in the Long Evening have been singing their children a mourning-song for the sun for nine generations without knowing it. The Cardinal did not forbid her descant because it was heresy. He forbade it because it was older than his hymn, and better.',
   unlightherald: 'Struck down, it announces its own death — and for one syllable, the voice stops subtracting and simply grieves. The heralds are not the Sovereign\'s creations. They are what remains of the First Light\'s own criers, conscripted, still contractually obligated to announce their employer.',
@@ -188,6 +215,15 @@ export const ITEM_LORE: Record<string, string> = {
   'amulet:whispers': 'The dark, it turns out, gossips. This amulet is simply a very good listener with no discretion whatsoever.',
   'potion:ichor': 'Bottled by someone who believed everything below is medicine if you are brave enough. The Cartographer\'s label, added later: "It is not."',
   'scroll:immolation': 'Guild disposal doctrine, single page. The Cartographer\'s note: "Read it angry, and stand in the middle of your problems first."',
+};
+
+export const UNIQUE_LORE: Record<string, string> = {
+  'Vigil': 'The Vestal\u2019s first spear, planted at the chapel door the night she lit the first candle. It burns because some promises soak in.',
+  'The Cartographer’s Pick': 'The tool that mapped every floor you have walked. It cuts rock, bone, and — its maker noted in the margin — excuses.',
+  'Choirmail': 'Woven from the bell-silver of the Cloister before it drowned. It rings very softly when struck, one note, always the same. Singers recognize it.',
+  'The Long Evening': 'A bow strung with the horizon itself, or so the Guild claimed when they sold it. Every arrow it looses arrives a little colder than it left.',
+  'Barrowband': 'Wight-gold, freely given — the only crown in the catacombs that ever came off willingly. Its previous owner asked one thing: spend the fury well.',
+  'The Last Candle': 'A wick of braided hair in a locket of wax. The Vestal does not know it is missing. When everything else has gone out, it will not.',
 };
 
 export const EGO_LORE: Record<string, string> = {

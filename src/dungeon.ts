@@ -1,6 +1,6 @@
 import { RNG } from './rng';
 import { T, idx, isWalkable, type LevelMap, type Monster, type MonsterDef, type Item } from './types';
-import { BOSS_FLOORS, BRANCHES, GODS, MONSTERS, MONSTER_BY_ID, STRATA, genItem, stratumFor, type BranchDef } from './data';
+import { BOSS_FLOORS, BRANCHES, GODS, MONSTERS, MONSTER_BY_ID, STRATA, genItem, mkItem, stratumFor, type BranchDef } from './data';
 
 export interface GenResult {
   map: LevelMap;
@@ -37,6 +37,125 @@ export interface GenOpts {
   branch?: BranchDef;
   branchPos?: number;
   doneBranches?: Set<string>;
+  runBranches?: Set<string>; // which branch of each pair exists this run
+  uniques?: Set<string>;     // artifacts already generated this run
+}
+
+// ---------------- hand-authored vaults
+// legend: #wall .floor +door ~water Llava %bones ,rubble ffungus Wtorch _altar $gold *loot Mmonster
+interface VaultDef { tag: string; rows: string[] }
+const VAULTS: VaultDef[] = [
+  { tag: 'shrine', rows: ['#######', '#..$..#', '#.._..#', '#W...W#', '#..M..#', '###+###'] },
+  { tag: 'crypt', rows: ['#########', '#%.%.%.%#', '#*.%M%.*#', '#%.%.%.%#', '####+####'] },
+  { tag: 'treasury', rows: ['########', '#$$..M.#', '#*$....#', '#..$$..#', '#.M..*.#', '###+####'] },
+  { tag: 'cache', rows: ['#########', '#~~~~~~~#', '#~..*..~#', '#~.$.$.~#', '#~~~.~~~#', '####+####'] },
+  { tag: 'forge', rows: ['#########', '#LL...LL#', '#L..*..L#', '#L.*.M.L#', '#LL...LL#', '####+####'] },
+  { tag: 'ring', rows: ['#########', '#..fff..#', '#.f...f.#', '#.f.*.f.#', '#.f...f.#', '#..fff..#', '####+####'] },
+  { tag: 'barracks', rows: ['#########', '#M.M.M.M#', '#.......#', '#*..$..*#', '####+####'] },
+  { tag: 'study', rows: ['#######', '#*....#', '#..M..#', '#.....#', '#..*..#', '###+###'] },
+  { tag: 'candles', rows: ['#######', '#W.W.W#', '#.....#', '#W.$.W#', '#.....#', '#W.W.W#', '###+###'] },
+];
+
+function placeVaults(
+  map: LevelMap, rng: RNG, depth: number,
+  monsters: Monster[], items: Item[],
+  pool: MonsterDef[], luck: number, uniques?: Set<string>,
+): void {
+  const n = rng.chance(0.7) ? rng.int(1, 2) : 0;
+  for (let v = 0; v < n; v++) {
+    const vault = rng.pick(VAULTS);
+    const vh = vault.rows.length;
+    const vw = vault.rows[0].length;
+    for (let tries = 0; tries < 90; tries++) {
+      const x0 = rng.int(2, W - vw - 3);
+      const y0 = rng.int(2, H - vh - 3);
+      let ok = true;
+      for (let y = -1; y <= vh && ok; y++) {
+        for (let x = -1; x <= vw && ok; x++) {
+          if (map.tiles[idx(x0 + x, y0 + y, W)] !== T.Wall) ok = false;
+        }
+      }
+      if (!ok) continue;
+      let door: [number, number] = [x0 + (vw >> 1), y0 + vh - 1];
+      for (let y = 0; y < vh; y++) {
+        for (let x = 0; x < vw; x++) {
+          const ch = vault.rows[y][x];
+          const gx = x0 + x, gy = y0 + y;
+          const i = idx(gx, gy, W);
+          switch (ch) {
+            case '#': break;
+            case '.': map.tiles[i] = T.Floor; break;
+            case '+': map.tiles[i] = T.DoorClosed; door = [gx, gy]; break;
+            case '~': map.tiles[i] = T.Water; break;
+            case 'L': map.tiles[i] = T.Lava; break;
+            case '%': map.tiles[i] = T.Bones; break;
+            case ',': map.tiles[i] = T.Rubble; break;
+            case 'f':
+              map.tiles[i] = T.Fungus;
+              map.lights.push({ x: gx, y: gy, r: 3.5, color: [70, 200, 150], flicker: rng.next() * 10 });
+              break;
+            case 'W':
+              map.tiles[i] = T.Torch;
+              map.lights.push({ x: gx, y: gy, r: 5, color: [255, 170, 80], flicker: rng.next() * 10 });
+              break;
+            case '_': {
+              map.tiles[i] = T.Altar;
+              map.altarGod.set(i, rng.pick(GODS).id);
+              map.lights.push({ x: gx, y: gy, r: 3.5, color: [150, 110, 255], flicker: rng.next() * 10 });
+              break;
+            }
+            case '$': {
+              map.tiles[i] = T.Floor;
+              const g = mkItem('gold', 'gold', { qty: rng.int(10, 20 + depth * 4) });
+              g.x = gx; g.y = gy;
+              items.push(g);
+              break;
+            }
+            case '*': {
+              map.tiles[i] = T.Floor;
+              const it = genItem(Math.min(20, depth + 1), rng, luck + 1, uniques);
+              it.x = gx; it.y = gy;
+              items.push(it);
+              break;
+            }
+            case 'M': {
+              map.tiles[i] = T.Floor;
+              if (pool.length) {
+                const def = rng.weighted(pool.map((m) => [m, m.weight] as const));
+                monsters.push(spawnMonster(def, gx, gy, depth));
+              }
+              break;
+            }
+          }
+        }
+      }
+      connectToFloor(map, rng, door[0], door[1], { x0, y0, vw, vh });
+      break;
+    }
+  }
+}
+
+function connectToFloor(
+  map: LevelMap, rng: RNG, fx: number, fy: number,
+  rect: { x0: number; y0: number; vw: number; vh: number },
+): void {
+  for (let r = 1; r < Math.max(W, H); r++) {
+    const cands: [number, number][] = [];
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const nx = fx + dx, ny = fy + dy;
+        if (nx < 1 || ny < 1 || nx >= W - 1 || ny >= H - 1) continue;
+        const inside = nx >= rect.x0 && nx < rect.x0 + rect.vw && ny >= rect.y0 && ny < rect.y0 + rect.vh;
+        if (!inside && map.tiles[idx(nx, ny, W)] === T.Floor) cands.push([nx, ny]);
+      }
+    }
+    if (cands.length) {
+      const [tx, ty] = rng.pick(cands);
+      corridor(map, rng, fx, fy, tx, ty);
+      return;
+    }
+  }
 }
 
 export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts = {}): GenResult {
@@ -121,12 +240,22 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
     map.lights.push({ x: i % W, y: Math.floor(i / W), r: 3.5, color: [150, 110, 255], flicker: rng.next() * 10 });
   }
 
+  // ---- monster pool (needed for vaults too)
+  const pool = opts.branch
+    ? MONSTERS.filter((m) => m.weight > 0 && m.branch === opts.branch!.id)
+    : MONSTERS.filter((m) => m.weight > 0 && !m.branch && depth >= m.depth[0] && depth <= m.depth[1]);
+
+  // ---- vaults (hand-authored set pieces, carved into the rock)
+  const monsters: Monster[] = [];
+  const items: Item[] = [];
+  if (stratum.gen !== 'throne') placeVaults(map, rng, depth, monsters, items, pool, luck, opts.uniques);
+
   // ---- player start & stairs (far apart)
   const open = floorIdx(map);
   const pi = rng.pick(open);
   const px = pi % W, py = Math.floor(pi / W);
   let best = pi, bestD = -1;
-  const dist = bfsDistance(map, px, py);
+  const dist = bfsDistance(map, px, py, true);
   for (const i of open) {
     if (dist[i] > bestD && dist[i] < Infinity && map.tiles[i] === T.Floor) { bestD = dist[i]; best = i; }
   }
@@ -139,6 +268,7 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
   if (!opts.branch) {
     for (const b of BRANCHES) {
       if (b.entry !== depth || opts.doneBranches?.has(b.id)) continue;
+      if (opts.runBranches && !opts.runBranches.has(b.id)) continue;
       for (let tries = 0; tries < 60; tries++) {
         const gi = rng.pick(open);
         const gx = gi % W, gy = Math.floor(gi / W);
@@ -153,7 +283,6 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
   }
 
   // ---- monsters
-  const monsters: Monster[] = [];
   const bossId = opts.branch ? (lastBranchLevel ? opts.branch.boss : undefined) : BOSS_FLOORS[depth];
   if (bossId) {
     const def = MONSTER_BY_ID.get(bossId)!;
@@ -162,9 +291,6 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
       : nearIdx(map, sx, sy, rng);
     monsters.push(spawnMonster(def, spot % W, Math.floor(spot / W), depth));
   }
-  const pool = opts.branch
-    ? MONSTERS.filter((m) => m.weight > 0 && m.branch === opts.branch!.id)
-    : MONSTERS.filter((m) => m.weight > 0 && !m.branch && depth >= m.depth[0] && depth <= m.depth[1]);
   // small chance of out-of-depth terror (spine only)
   const oodPool = opts.branch ? [] : MONSTERS.filter((m) => m.weight > 0 && !m.branch && m.depth[0] === depth + 1);
   const count = 6 + Math.floor(depth * 0.8) + rng.int(0, 3);
@@ -194,12 +320,11 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
   }
 
   // ---- items
-  const items: Item[] = [];
   const itemCount = rng.int(4, 7) + (depth >= 10 ? 1 : 0);
   for (let n = 0; n < itemCount; n++) {
     const i = rng.pick(open);
     if (map.tiles[i] !== T.Floor && map.tiles[i] !== T.Bones) continue;
-    const it = genItem(depth, rng, luck);
+    const it = genItem(depth, rng, luck, opts.uniques);
     it.x = i % W;
     it.y = Math.floor(i / W);
     items.push(it);

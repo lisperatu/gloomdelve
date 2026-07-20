@@ -8,6 +8,7 @@ const TS = 32; // tile px (16px sprites at 2x)
 interface Particle { x: number; y: number; vx: number; vy: number; life: number; max: number; color: string; size: number }
 interface Floater { x: number; y: number; text: string; color: string; life: number }
 interface Beam { x0: number; y0: number; x1: number; y1: number; color: string; life: number }
+interface Trail { points: [number, number][]; life: number }
 
 export interface UIView {
   mode: string;
@@ -22,6 +23,7 @@ export class Renderer {
   particles: Particle[] = [];
   floaters: Floater[] = [];
   beams: Beam[] = [];
+  trails: Trail[] = [];
   shake = 0;
   flash: { color: string; life: number } | null = null;
   noise: number[] = [];
@@ -63,6 +65,9 @@ export class Renderer {
           break;
         case 'beam':
           this.beams.push({ ...f, life: 1 });
+          break;
+        case 'trail':
+          this.trails.push({ points: f.points, life: 1 });
           break;
         case 'flash':
           this.flash = { color: f.color, life: 1 };
@@ -325,6 +330,28 @@ export class Renderer {
       ctx.fillRect(sx - rad, sy - rad, rad * 2, rad * 2);
     }
     ctx.globalCompositeOperation = 'source-over';
+
+    // -------- auto-explore footprint trails
+    for (const tr of this.trails) {
+      tr.life -= dt * 0.3;
+      if (tr.life <= 0) continue;
+      const n = tr.points.length;
+      for (let i = 0; i < n - 1; i++) {
+        // older steps fade first, so the trail dissolves from the tail
+        const a = Math.max(0, Math.min(1, tr.life * 1.2 - (1 - i / n) * 0.3)) * 0.85;
+        if (a <= 0.02) continue;
+        const [tx, ty] = tr.points[i];
+        ctx.fillStyle = `rgba(240,228,190,${a})`;
+        ctx.shadowColor = '#e8dcb0';
+        ctx.shadowBlur = 6;
+        const off = i % 2 === 0 ? -4 : 4; // alternate like footfalls
+        ctx.beginPath();
+        ctx.arc(tx * TS - camX + TS / 2 + off, ty * TS - camY + TS / 2 + 2, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+    this.trails = this.trails.filter((tr) => tr.life > 0);
 
     // -------- beams
     for (const b of this.beams) {
