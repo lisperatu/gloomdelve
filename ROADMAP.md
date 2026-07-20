@@ -24,15 +24,21 @@ auto-save, procedural SFX, tile renderer with dynamic lighting.
 
 ## v0.2 — More dungeon (near-term)
 
-- [ ] **Branch pairs** (DCSS Swamp/Shoals pattern): each gate slot rolls one of two
+Also shipped in v0.2: player ranged weapons (sling/shortbow/grave-bow, `f` to fire),
+character naming, local hall of fame with scores, grouped inventory, equipped-item stats.
+
+Next up: **sprite review pass** — render a contact sheet of all creature sprites,
+critique each against what the creature is, redraw the weak ones.
+
+- [x] **Branch pairs** (DCSS Swamp/Shoals pattern): each gate slot rolls one of two
       branches per run — e.g. The Ossuary *or* The Wax Garden; Silkfen *or* The Roots.
       Doubles branch variety without doubling per-run length.
-- [ ] **Vaults**: hand-authored room templates (10–20) injected into the generators —
+- [x] **Vaults**: hand-authored room templates (10–20) injected into the generators —
       shrines, treasure traps, ambush rooms, mini-stories in floor layout.
 - [ ] **The Gravemerchant**: a rare neutral NPC; gold finally buys identified goods.
-- [ ] **Unique artifacts**: ~10 named items with fixed egos + their own lore entries
+- [x] **Unique artifacts**: ~10 named items with fixed egos + their own lore entries
       (the Cartographer's own gear belongs in the game).
-- [ ] **God wrath & conversion**: abandoning a god should cost; the Silent King should
+- [x] **God wrath & conversion**: abandoning a god should cost; the Silent King should
       notice you leaving.
 - [ ] Audio toggle + per-stratum ambient drone.
 
@@ -40,10 +46,10 @@ auto-save, procedural SFX, tile renderer with dynamic lighting.
 
 - [ ] **Corruptions**: Qud-style mutations with trade-offs, offered at altars of a 7th,
       nameless power (grow a stinger, lose an eye: the dark edits you).
-- [ ] **Monster AI pass**: kiting casters, fleeing at low HP, pack flanking.
+- [x] **Monster AI pass** (flee when hurt, ranged kiting, pack flanking): kiting casters, fleeing at low HP, pack flanking.
 - [ ] **Morgue files**: shareable end-of-run report (seed, build, kills, chronicle pages found).
 - [ ] **Daily seed**: same dungeon for everyone, once a day.
-- [ ] **Balance harness**: headless bot runs to tune the difficulty curve per class.
+- [x] **Balance harness** (`npm run sim`): headless bot runs to tune the difficulty curve per class.
 - [ ] More Chronicle: chapters for branches completed without taking damage, godless wins, etc.
 
 ## v1.0 — More world (long-term)
