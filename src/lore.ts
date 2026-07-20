@@ -22,7 +22,7 @@
 export interface ChronicleEntry {
   id: string;
   title: string;
-  unlock: { kind: 'start' | 'stratum' | 'boss' | 'god' | 'death' | 'win' | 'corrupt'; key?: string | number };
+  unlock: { kind: 'start' | 'stratum' | 'boss' | 'god' | 'death' | 'win' | 'corrupt' | 'deed'; key?: string | number };
   text: string;
 }
 
@@ -91,6 +91,42 @@ export const CHRONICLE: ChronicleEntry[] = [
   {
     id: 'reflection2', title: 'The Faces in the Cistern', unlock: { kind: 'boss', key: 'reflection' },
     text: 'Mirrors below the world do not work the way they do above, because reflection requires light and the light down here has been inverted. What the Cistern\u2019s water shows is therefore not you — it is what the Unlight sees when it looks at you: the wanting, the hoarding, the version of you that descends for the crown and not the dawn. Every delver leaves one behind. The Pale Reflection is the anthology. The Chronicle\u2019s warning is underlined three times: it wears the faces of those who got furthest, and the reason it wears them is that the delvers who got furthest were the ones most like it.',
+  },
+  {
+    id: 'riddle_ossuary', title: 'The Right Row', unlock: { kind: 'deed', key: 'riddle_ossuary' },
+    text: 'You returned a misfiled thing to its gap, and the archive paid you for the tidying — the shelves keep a reliquary for exactly this, stocked and waiting. Attend to the detail the Bride hopes you will miss: the gap was labeled before the remains went missing. The Ossuary does not react to its losses. It schedules them. The Chronicle has met one other institution below that files an event before it happens, and it is a prison.',
+  },
+  {
+    id: 'riddle_waxgarden', title: 'The Order of Grief', unlock: { kind: 'deed', key: 'riddle_waxgarden' },
+    text: 'The vigil-rule the wax taught your knuckles — the stolen, then the keeper, then yourself — is not etiquette. It is engineering. A vigil begun with yourself burns inward, and the Garden is planted thick with what that leaves: the wretches in the wax are not intruders the Vestal caught. They are votaries who lit their own candle first. The rule was written after them, in the only medium the Garden trusts to hold an edge: a burn.',
+  },
+  {
+    id: 'riddle_silkfen', title: 'The Deposit', unlock: { kind: 'deed', key: 'riddle_silkfen' },
+    text: 'You gave the larder something bottled, and the larder gave back with interest — which settles a question the Cartographer left open twice. Mother-of-Silk is not hoarding. She is banking. A hoard only implies fear; a bank implies a forecast: a day on which everything she holds must be withdrawn at once, and creditors whose shapes she has already measured. Note what the scale accepted as currency. Things that keep. She is not expecting the day soon. She is expecting it exactly.',
+  },
+  {
+    id: 'riddle_roots', title: 'What Was Handed Off', unlock: { kind: 'deed', key: 'riddle_roots' },
+    text: 'The elf under the cairn died mid-errand, holding the charred seed toward something, and the loam you planted it in was already waiting — warm, root-lined, dug to fit. So was the burrow that opened: excavated generations ago, aimed at a planting that had not happened yet. The forests do not dig toward their pasts. They dig toward their futures, and they are patient enough to build the road before the traveler is born. The seed fell below the night of the theft. Ask what the forests expect it to grow into, this close to the throne.',
+  },
+  {
+    id: 'riddle_chains', title: 'The Untouched Lock', unlock: { kind: 'deed', key: 'riddle_chains' },
+    text: 'The reserved cell was never locked — a reservation is not a restraint — and inside, effects laid out in trust: whoever is coming will arrive with nothing, and the Vault intends them to be received properly. The Chronicle places two facts side by side and declines to introduce them. The date on the shelf-tag matches the date on the ledger’s final page. And the effects were sized, the Cartographer’s note insists, by someone who knew the arrival’s measurements. The Vault is not holding a cell for a prisoner. It is keeping a room ready for a guest.',
+  },
+  {
+    id: 'riddle_cistern', title: 'The Door the Water Keeps', unlock: { kind: 'deed', key: 'riddle_cistern' },
+    text: 'The basin showed you a door the room did not have, and the door was there, because the Cistern reflects what the Unlight sees and the Unlight sees its own ways below. Understand what you actually did: you did not find a secret. You read the owner’s map, over the owner’s shoulder, in a mirror the owner trusts. The margin, in a hand pressed hard enough to tear: the ways it keeps are kept for something that walks them. The water knows the routes. Now the water knows you know.',
+  },
+  {
+    id: 'untouched', title: 'The Unmarked Guest', unlock: { kind: 'deed', key: 'untouched' },
+    text: 'The Chronicle keeps a very short appendix of delvers who walked into one of the deep places — the archive, the larder, the vault, the garden — and walked out again without shedding one drop. The dungeon\u2019s custodians do not know what to file such a person under, and it disturbs them the way a blank line disturbs a clerk. You are in the appendix now. Somewhere below, something has begun setting a better table, on the reasoning that a guest who cannot be wounded must instead be hosted.',
+  },
+  {
+    id: 'godless', title: 'The Unclaimed', unlock: { kind: 'deed', key: 'godless' },
+    text: 'Fifteen floors down with no god\u2019s mark on you. Understand what the six make of that: not offense — inventory. An unclaimed soul at this depth is the rarest commodity in the deep, and every altar you pass now files a small, competing claim. The Cartographer went godless to depth eleven and wrote: "The silence below the hymn is not empty. It is attentive. Something down here prefers us unaffiliated, and I have stopped wanting to know its reasons." You have four floors on the Cartographer. The attention compounds.',
+  },
+  {
+    id: 'edited3', title: 'The Third Revision', unlock: { kind: 'deed', key: 'edited3' },
+    text: 'One edit is a bargain. Two is a habit. Three, the Chronicle notes, is a manuscript — and manuscripts belong to their editor, whatever the ink believes. Delvers with three or more revisions report the same small phenomenon: at warped altars they no longer feel offered to. They feel consulted, the way one consults a work in progress about its own next chapter. The Chronicle does not record any delver reaching seven edits. It records, instead, that the eighth altar such a delver finds is always already spent, as if something decided the draft was finished.',
   },
   {
     id: 'editor', title: 'The Nameless Editor', unlock: { kind: 'corrupt' },

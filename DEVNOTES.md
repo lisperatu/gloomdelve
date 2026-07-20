@@ -53,6 +53,27 @@ and README.md (what exists, player-facing).
 
 ## Where we are / what's next (see ROADMAP.md)
 
-v0.2 mostly done. NEXT: **sprite review pass** (contact-sheet render → critique vs creature
-identity → redraw weak ones). Then: Gravemerchant NPC shop (gold sink), ambient audio +
-mute, inventory tabs, then v0.3 (corruptions, morgue files, daily seed, more chronicle).
+v0.2 COMPLETE (incl. sprite pass, Gravemerchant shop on bump, ambient drone + `m` mute).
+v0.3 nearly complete: corruptions (warped altars, 8 edits, `hasCorr()` effects at calc
+sites), morgue files (`morgueText()`, `v` on death/win, `c` copy `s` save), daily seed
+(`Game.dailySeed()`, `d` on title; per-run reseed happens in startRun — full state reset
+there, keep new fields in that reset list!), 3 deed chapters (`earnDeed`: untouched/
+godless/edited3). charName is sanitized in startRun + `esc()` in ui.ts render sites (XSS).
+Agent passes done: lore mysticism, sprite aesthetics (bow sprite was missing — fixed),
+sim-driven difficulty tuning (see git log for its data.ts changes).
+
+v0.4 IN FLIGHT: bidirectional stairs DONE — `climb()` ('<'), floorCache in game.ts
+(StoredFloor incl. merchantStock; keys `d{depth}` / `b{id}:{pos}`; pack8/unpack8 compact
+save encoding; exitBranch restores the spine floor and rubbles the used gate; allies
+left behind persist on their floor). Per-floor object state MUST live in LevelMap or be
+keyed by floor so it rides the cache. StairsUp appended to enum T (=16; append-only,
+values live in saves). ui.ts local tile-const dupe removed — import the real T.
+registerSprites() added to sprites.ts so content files can add art without owning it.
+
+THREE AGENTS + integration queue: tuning (data.ts+sim), puzzle objects
+(game/dungeon/types/ui/render/lore + new files; also owns inventory item detail view),
+doll art (sprites.ts). After ALL complete: single merge+deploy, then integrate
+`staging/next-branches.md` — sub-branch architecture (branch stack), branch pair 4
+(Waiting Room/Museum of You + Office/Gift Shop sub-branches), new 'halls'/'gallery'
+generators. Then: more races/classes/gods (Accomplice god reveal — Office chapter is
+its setup), second ending, achievements, touch controls, Tauri, itch.io.

@@ -47,10 +47,10 @@ sovereign redrawn). **v0.2 is complete.** Next: v0.3.
 - [x] **Corruptions**: Qud-style mutations with trade-offs, offered at altars of a 7th,
       nameless power (grow a stinger, lose an eye: the dark edits you).
 - [x] **Monster AI pass** (flee when hurt, ranged kiting, pack flanking): kiting casters, fleeing at low HP, pack flanking.
-- [ ] **Morgue files**: shareable end-of-run report (seed, build, kills, chronicle pages found).
-- [ ] **Daily seed**: same dungeon for everyone, once a day.
+- [x] **Morgue files**: shareable end-of-run report (seed, build, kills, chronicle pages found).
+- [x] **Daily seed**: same dungeon for everyone, once a day.
 - [x] **Balance harness** (`npm run sim`): headless bot runs to tune the difficulty curve per class.
-- [ ] More Chronicle: chapters for branches completed without taking damage, godless wins, etc.
+- [x] More Chronicle: 3 deed-gated chapters (untouched branch, godless depth 15, three edits).
 
 **Standing rule for all future branches** (user directive): every new branch must carry
 a bizarre, distinct story — not a theme, a *situation*. Candidate seeds: the Auction of
@@ -58,6 +58,23 @@ Hours (bid years of your life against the dead); the Museum of You (exhibits fro
 that never happened); the Backwards River (a floor where cause follows effect); the
 Choir School (where the hymn's replacement singers are grown); the Waiting Room (a
 branch that is only a queue, and what happens if you skip it).
+
+## v0.4 — Deeper world (in progress)
+
+- [x] **Bidirectional stairs**: climb back up (`<`); every floor is cached exactly as
+      left (monsters, loot, fog, abandoned allies) and survives save/restore. The
+      surface stays sealed. New perspective stairwell sprites (down into dark, up into pale light).
+- [ ] **Mysterious puzzle objects** per branch (agent in flight): simple 2–4 step
+      puzzles deeply aligned with each branch's fiction; solving opens/reveals things.
+- [ ] **Inventory item detail view** (agent in flight): lore + identified effects + stats.
+- [ ] **Doll & equipment art pass** (agent in flight): ruthless review of race dolls + overlays.
+- [ ] **Sub-branches**: branches within branches, each a different KIND of place;
+      branch stack routing. Full design + content staged in `staging/next-branches.md`.
+- [ ] **Branch pair 4 (entry 15)**: the Waiting Room (a queue with no clerk; sub-branch:
+      the Office — the Accomplice's appointment, canon payoff) vs the Museum of You
+      (exhibits from unlived runs; sub-branch: the Gift Shop). Distinct generators
+      ('halls', 'gallery'), palettes (fluorescent green / gallery teal-gold / manila / the
+      game's only pink), 11 creatures, 3 bosses. See staging doc.
 
 ## v1.0 — More world (long-term)
 

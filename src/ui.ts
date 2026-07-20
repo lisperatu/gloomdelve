@@ -1,6 +1,6 @@
-import type { Item, Monster } from './types';
+import { T, type Item, type Monster } from './types';
 import {
-  AMULETS, ARMORS, CLASSES, GODS, POTIONS, RACES, RINGS, SCROLLS, STRATA, WEAPONS,
+  AMULETS, ARMORS, ARMOR_EGOS, CLASSES, GODS, POTIONS, RACES, RINGS, SCROLLS, STRATA, WEAPONS, WEAPON_EGOS,
   itemName, type AbilityDef,
 } from './data';
 import { itemSprite, monsterSprite as monsterSpriteName, playerDollURL, spriteURL } from './sprites';
@@ -11,9 +11,26 @@ import { C, Game } from './game';
 import { sfx } from './audio';
 import type { Renderer } from './render';
 
-type Mode = 'title' | 'race' | 'class' | 'name' | 'play' | 'inv' | 'help' | 'target' | 'dead' | 'win' | 'examine' | 'codex' | 'hall' | 'shop' | 'corrupt';
+type Mode = 'title' | 'race' | 'class' | 'name' | 'play' | 'inv' | 'help' | 'target' | 'dead' | 'win' | 'examine' | 'codex' | 'hall' | 'shop' | 'corrupt' | 'morgue' | 'itemdetail';
+
+// what each ego actually does, spelled out (mechanics mirror game.ts calc sites)
+const EGO_FX: Record<string, string> = {
+  flaming: 'Each hit deals a bonus 2–5 fire damage.',
+  frost: 'Each hit deals a bonus 2–5 cold damage; 30% chance to slow the target.',
+  venom: 'Half of all hits poison the target (unless it resists).',
+  draining: 'A third of the damage you deal returns to you as life.',
+  vorpal: 'All damage dealt is increased by 25%.',
+  shadows: '+2 evasion, and you are markedly harder to notice.',
+  warding: '+2 armor.',
+  embers: 'You resist fire.',
+  mire: 'You are immune to poison.',
+  vitality: '+15 maximum health.',
+};
 
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+
+const esc = (v: unknown): string =>
+  String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] ?? c));
 
 export class UI {
   game: Game;
@@ -22,6 +39,8 @@ export class UI {
   raceSel = 0;
   classSel = 0;
   invSel = -1;
+  pendingSeed: number | null = null;
+  pendingDaily = false;
   targets: Monster[] = [];
   targetIdx = 0;
   exX = 0;
@@ -62,8 +81,8 @@ export class UI {
     this.mode = 'title';
     const hasSave = Game.hasSave();
     const hint = hasSave
-      ? `<span class="key">Enter</span> continue your descent &nbsp;·&nbsp; <span class="key">n</span> new &nbsp;·&nbsp; <span class="key">h</span> hall of fame`
-      : `<span class="key">Enter</span> to descend &nbsp;·&nbsp; <span class="key">h</span> hall of fame`;
+      ? `<span class="key">Enter</span> continue &nbsp;·&nbsp; <span class="key">n</span> new &nbsp;·&nbsp; <span class="key">d</span> daily descent &nbsp;·&nbsp; <span class="key">h</span> hall of fame`
+      : `<span class="key">Enter</span> to descend &nbsp;·&nbsp; <span class="key">d</span> daily descent &nbsp;·&nbsp; <span class="key">h</span> hall of fame`;
     const arts = ['title.png', ...Array.from({ length: 19 }, (_, i) => `title${i + 2}.png`)];
     const art = arts[Math.floor(Math.random() * arts.length)];
     this.show(`
@@ -94,7 +113,7 @@ export class UI {
       </div>`).join('');
     this.show(`
       <div class="panel" style="max-width:860px;">
-        <h2>Choose your Lineage</h2>
+        <h2>Choose your Lineage${this.pendingDaily ? ' — <span style="color:#c9a24b">Daily Descent</span>' : ''}</h2>
         <div class="cards">${cards}</div>
         <p class="hint"><span class="key">a–${LETTERS[RACES.length - 1]}</span> or click · <span class="key">Esc</span> back</p>
       </div>`, true);
@@ -144,7 +163,11 @@ export class UI {
   }
 
   startGame(name?: string): void {
-    this.game.startRun(RACES[this.raceSel].id, CLASSES[this.classSel].id, name || 'the Delver');
+    this.game.startRun(RACES[this.raceSel].id, CLASSES[this.classSel].id, name || 'the Delver',
+      this.pendingSeed ?? undefined, this.pendingDaily);
+    if (this.pendingDaily) this.game.msg('The Daily Descent: today, every delver in the world walks these same halls.', C.god);
+    this.pendingSeed = null;
+    this.pendingDaily = false;
     this.mode = 'play';
     this.hide();
     this.refreshHud();
@@ -242,11 +265,44 @@ export class UI {
     }
   }
 
+  showMorgue(): void {
+    this.mode = 'morgue';
+    const text = this.game.morgueText();
+    this.show(`
+      <div class="panel" style="min-width:640px;">
+        <h2>Morgue File</h2>
+        <pre class="morgue">${esc(text)}</pre>
+        <p class="hint"><span class="key">c</span> copy to clipboard · <span class="key">s</span> save as file · <span class="key">Esc</span> back</p>
+      </div>`);
+  }
+
+  morgueKey(k: string): void {
+    const g = this.game;
+    if (k === 'Escape' || k === 'Enter') {
+      if (g.over === 'win') this.showWin();
+      else this.showDeath();
+      return;
+    }
+    if (k === 'c') {
+      void navigator.clipboard?.writeText(g.morgueText()).then(() => {
+        const h = this.overlay.querySelector('.hint');
+        if (h) h.innerHTML = 'Copied to clipboard.';
+      });
+      return;
+    }
+    if (k === 's') {
+      const a = document.createElement('a');
+      a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(g.morgueText());
+      a.download = `gloomdelve-${g.player.charName.replace(/\s+/g, '_')}-${g.seed}.txt`;
+      a.click();
+    }
+  }
+
   showHall(): void {
     this.mode = 'hall';
     const hall = Game.loadHall();
     const rows = hall.slice(0, 15).map((h, i) => `
-      <tr><td>${i + 1}</td><td style="color:var(--bone)">${h.name}</td><td>${h.title}</td>
+      <tr><td>${i + 1}</td><td style="color:var(--bone)">${esc(h.name)}</td><td>${esc(h.title)}</td>
       <td style="color:${h.outcome === 'ASCENDED' ? 'var(--gold)' : 'var(--ink-dim)'}">${h.outcome}</td>
       <td>${h.depth}</td><td>${h.level}</td><td style="color:var(--gold)">${h.score}</td></tr>`).join('');
     this.show(`
@@ -269,7 +325,7 @@ export class UI {
           <div><span class="key">yubn</span> diagonal moves</div>
           <div><span class="key">. or 5</span> wait a turn</div>
           <div><span class="key">g</span> pick up</div>
-          <div><span class="key">></span> descend stairs</div>
+          <div><span class="key">> / <</span> descend / climb stairs</div>
           <div><span class="key">i</span> inventory</div>
           <div><span class="key">1–5</span> abilities & god powers</div>
           <div><span class="key">p</span> pray at altar</div>
@@ -285,7 +341,8 @@ export class UI {
         <p class="flavor" style="margin-top:14px">To equip or use an item: press <span class="key">i</span>, then the item's letter twice (or letter, then Enter).</p>
         <p class="flavor">Reading the ground: brick walls block you; textured stone floor is safe, as are bones, rubble and glowing fungus.
         Dark blue water is passable but hampers your evasion (and douses flame). Glowing lava will kill you. Doors open when you walk into them.</p>
-        <p class="flavor">Sleeping foes take brutal bonus damage. Altars accept only the unclaimed. The way back is always sealed — the only way out is through the throne.</p>
+        <p class="flavor">Sleeping foes take brutal bonus damage. Altars accept only the unclaimed. Stairs climb both ways and floors remember you — but the surface itself is sealed. The only way out is through the throne.</p>
+        <p class="flavor">The side-branches keep strange furniture — shelves, candles, scales, cells, basins. Such things answer to touch: walk into them, and examine (<span class="key">x</span>) them first if you value your hands. What they open was worth sealing.</p>
         <p class="hint"><span class="key">Esc</span> to return</p>
       </div>`);
   }
@@ -341,14 +398,14 @@ export class UI {
       const verb = it.kind === 'potion' ? 'quaff' : it.kind === 'scroll' ? 'read' : 'equip';
       detail = `<p class="flavor" style="margin-top:12px">${this.describe(it)}</p>
         <p class="hint"><span class="key">Enter</span> (or <span class="key">${LETTERS[this.invSel]}</span> again) to ${verb}
-        · <span class="key">d</span> drop · <span class="key">Esc</span> back</p>`;
+        · <span class="key">?</span> inspect · <span class="key">d</span> drop · <span class="key">Esc</span> back</p>`;
     }
     this.show(`
       <div class="panel" style="min-width:520px;">
         <h2>Inventory · ${p.gold} gold</h2>
         <div class="inv-list">${eq}<hr style="border-color:#241e32;margin:8px 0">${inv}</div>
         ${detail}
-        <p class="hint"><span class="key">a–z</span> select, twice to use/equip · <span class="key">1–5</span> remove worn · <span class="key">Esc</span> close</p>
+        <p class="hint"><span class="key">a–z</span> select, twice to use/equip · <span class="key">A–Z</span> inspect an item · <span class="key">1–5</span> remove worn · <span class="key">Esc</span> close</p>
       </div>`);
     this.overlay.querySelectorAll('.inv-list [data-i]').forEach((el) => {
       el.addEventListener('click', () => {
@@ -356,6 +413,79 @@ export class UI {
         this.showInventory();
       });
     });
+  }
+
+  // ---------- full item inspection (from inventory: Shift+letter, or '?')
+  detailItem: Item | null = null;
+
+  showItemDetail(it: Item): void {
+    this.mode = 'itemdetail';
+    this.detailItem = it;
+    const g = this.game;
+    const known = g.ident.known.has(`${it.kind}:${it.id}`);
+    const [spr, col] = itemSprite(it);
+    const rows: string[] = [];
+    const stat = (label: string, v: string): void => { rows.push(`<tr><td>${label}</td><td>${v}</td></tr>`); };
+    let effect = '';
+    let egoBlock = '';
+    let loreBlock = '';
+    const kindWord: Record<string, string> = {
+      weapon: 'weapon', armor: 'body armor', potion: 'potion', scroll: 'scroll', ring: 'ring', amulet: 'amulet',
+    };
+    if (it.kind === 'weapon') {
+      const d = WEAPONS.find((w) => w.id === it.id)!;
+      stat('damage', `${d.dmg[0]}–${d.dmg[1] + it.plus}`);
+      stat('accuracy', `${d.acc + it.plus >= 0 ? '+' : ''}${d.acc + it.plus}`);
+      if (d.range) stat('range', `${d.range} (fire with f, uses DEX; clumsy in melee)`);
+      if (it.plus) stat('enchantment', `+${it.plus}`);
+    } else if (it.kind === 'armor') {
+      const d = ARMORS.find((a) => a.id === it.id)!;
+      stat('armor', `${d.ac + it.plus}`);
+      stat('evasion', `${d.evPen === 0 ? '±0' : d.evPen}`);
+      if (it.plus) stat('enchantment', `+${it.plus}`);
+    }
+    if (it.kind === 'weapon' || it.kind === 'armor') {
+      if (it.ego) {
+        const egoName = it.kind === 'weapon' ? WEAPON_EGOS[it.ego] : ARMOR_EGOS[it.ego];
+        egoBlock = `<p><b>${egoName ?? it.ego}:</b> ${EGO_FX[it.ego] ?? 'Its working is not recorded.'}</p>`;
+      }
+    } else if (known) {
+      const defs = it.kind === 'potion' ? POTIONS : it.kind === 'scroll' ? SCROLLS : it.kind === 'ring' ? RINGS : AMULETS;
+      const d = defs.find((x) => x.id === it.id);
+      if (d) effect = `<p><b>Effect:</b> ${d.desc}</p>`;
+    } else {
+      const how = it.kind === 'potion' ? 'Drink it to learn — the hard way'
+        : it.kind === 'scroll' ? 'Read it to learn — aloud, and irrevocably'
+          : 'Wear it to learn its nature';
+      effect = `<p style="color:#8f887c"><i>Unidentified. Its purpose has not yet been paid for. ${how}.</i></p>`;
+    }
+    // lore: same sources as the examine panel and codex — one truth, no copies
+    const loreLine = it.unique ? UNIQUE_LORE[it.unique]
+      : known ? (ITEM_LORE[`${it.kind}:${it.id}`] ?? (it.ego ? EGO_LORE[it.ego] : undefined))
+        : (it.ego && (it.kind === 'weapon' || it.kind === 'armor')) ? EGO_LORE[it.ego] : undefined;
+    if (loreLine) loreBlock = `<p class="ex-lore">${loreLine}</p>`;
+    const uniqueTag = it.unique ? `<div class="ex-sub" style="color:#e0a050">a named artifact — one exists</div>` : '';
+    const qty = it.qty > 1 ? ` ×${it.qty}` : '';
+    this.show(`
+      <div class="panel" style="min-width:480px;max-width:620px;">
+        <div class="ex-head"><img src="${spriteURL(spr, col)}" alt="" /><div>
+          <h2 style="margin:0">${it.unique ? `<span style="color:#e0a050">${itemName(it, g.ident)}</span>` : itemName(it, g.ident)}${qty}</h2>
+          <div class="ex-sub">${kindWord[it.kind] ?? it.kind}${known || it.kind === 'weapon' || it.kind === 'armor' ? '' : ' · unidentified'}</div>
+          ${uniqueTag}
+        </div></div>
+        ${rows.length ? `<table class="stats-table" style="margin:10px 0">${rows.join('')}</table>` : ''}
+        ${effect}
+        ${egoBlock}
+        ${loreBlock}
+        <p class="hint"><span class="key">Esc</span> back to inventory</p>
+      </div>`);
+  }
+
+  itemDetailKey(k: string): void {
+    if (k === 'Escape' || k === 'Enter' || k === '?') {
+      this.detailItem = null;
+      this.showInventory();
+    }
   }
 
   describe(it: Item): string {
@@ -389,7 +519,7 @@ export class UI {
     this.show(`
       <div class="panel deathpanel" style="text-align:center;">
         <img class="titleart" src="${import.meta.env.BASE_URL}art/death.png" onerror="this.style.display='none'" alt="" />
-        <h1>${(g.player.charName ?? 'THE DELVER').toUpperCase()} HAS FALLEN</h1>
+        <h1>${esc((g.player.charName ?? 'THE DELVER').toUpperCase())} HAS FALLEN</h1>
         <div class="tag">SLAIN BY ${g.deathCause.toUpperCase()} · ${g.locationName().toUpperCase()} · SCORE ${g.score()}</div>
         <table class="stats-table" style="margin:14px auto">
           <tr><td>Delver</td><td>${g.player.name}</td></tr>
@@ -401,7 +531,7 @@ export class UI {
         </table>
         <p class="flavor">The dungeon adds your name to its ledger — the ${meta.deaths}${['th','st','nd','rd'][((meta.deaths%100>10&&meta.deaths%100<14)?0:meta.deaths%10)]??'th'} entry in its pages.
         But the Codex survives you: everything you learned, the next delver knows. Knowledge is the one coin the dark cannot confiscate.</p>
-        <p class="hint"><span class="key">Enter</span> to delve again · your name is in the Hall of Fame (<span class="key">h</span> at title)</p>
+        <p class="hint"><span class="key">Enter</span> delve again · <span class="key">v</span> morgue file · your name is in the Hall of Fame</p>
       </div>`);
   }
 
@@ -412,7 +542,7 @@ export class UI {
       <div class="panel winpanel" style="text-align:center;">
         <img class="titleart" src="${import.meta.env.BASE_URL}art/win.png" onerror="this.style.display='none'" alt="" />
         <h1>THE UNLIGHT DIES</h1>
-        <div class="tag">${(g.player.charName ?? 'THE DELVER').toUpperCase()} TAKES THE CROWN · SCORE ${g.score()}</div>
+        <div class="tag">${esc((g.player.charName ?? 'THE DELVER').toUpperCase())} TAKES THE CROWN · SCORE ${g.score()}</div>
         <table class="stats-table" style="margin:14px auto">
           <tr><td>Delver</td><td>${g.player.name}</td></tr>
           <tr><td>Level</td><td>${g.player.level}</td></tr>
@@ -626,6 +756,9 @@ export class UI {
       case 'boss': return g.seenBosses.has(e.unlock.key as string);
       case 'god': return g.player?.godId != null;
       case 'win': return g.over === 'win';
+      case 'deed': return g.deeds.includes(e.unlock.key as string);
+      case 'corrupt': return (g.player?.corruptions?.length ?? 0) > 0;
+      case 'death': return g.over === 'dead' || Game.loadMeta().deaths > 0;
       default: return false;
     }
   }
@@ -817,10 +950,6 @@ export class UI {
   describeTerrain(t: number, i: number): string {
     const g = this.game;
     const s = STRATA[g.level.stratum];
-    const T = {
-      Wall: 0, Floor: 1, DoorClosed: 2, DoorOpen: 3, StairsDown: 4, Water: 5, Lava: 6,
-      Altar: 7, Fungus: 8, Bones: 9, Rubble: 10, Torch: 11,
-    };
     switch (t) {
       case T.Wall: case T.Torch:
         return `<h3>Ancient masonry</h3><p>Impassable.</p><p class="ex-fla">Whoever built ${s.name} built it to keep things in, not out.</p>`;
@@ -829,7 +958,9 @@ export class UI {
       case T.DoorOpen:
         return `<h3>Open doorway</h3><p>Passable. It will not close again; nothing down here does.</p>`;
       case T.StairsDown:
-        return `<h3>Descending stair</h3><p>Press <span class="key">></span> while standing on it. There is no way back up.</p>`;
+        return `<h3>Descending stair</h3><p>Press <span class="key">></span> while standing on it. Floors you leave stay exactly as you left them.</p>`;
+      case T.StairsUp:
+        return `<h3>Ascending stair</h3><p>Press <span class="key"><</span> while standing on it to climb back the way you came. The floor above remembers you.</p>`;
       case T.Water:
         return `<h3>Black water</h3><p>Passable. −2 evasion while you stand in it (Mireborn gain +2). Douses burning.</p><p class="ex-fla">The surface is calm. The surface is lying.</p>`;
       case T.Lava:
@@ -854,6 +985,37 @@ export class UI {
         return `<h3>A warped altar</h3><p>It bears no god\u2019s mark. <span class="key">p</span>ray on it to hear its offer: a permanent edit to what you are — a gift and a cost, both irreversible.</p><p class="ex-fla">The Cartographer\u2019s note: "Whoever tends these does not sign their work. Note the handwriting anyway."</p>`;
       case 14: // Merchant
         return `<h3>The Gravemerchant</h3><p>Walk into him to trade. Gold accepted; questions discouraged.</p><p class="ex-fla">Nobody knows how he gets below faster than the delvers do. Nobody has ever seen him arrive, or leave, or blink.</p>`;
+      case T.ObjNiche:
+        return `<h3>A gap in the shelves</h3><p>One slot in the bone-archive stands empty, exactly remains-shaped. Walk into it to touch the shelf.</p><p class="ex-fla">The notch-script label was carved before whatever belongs here went missing. The archive files its losses in advance. If you find what is misfiled, bring it back.</p>`;
+      case T.ObjSkull:
+        return `<h3>Misfiled remains</h3><p>A crowned skull, shelved in the wrong row. Walk into it to take it up.</p><p class="ex-fla">The Bride finds misfilings embarrassing. The boneswarms ARE misfilings. Somewhere in these aisles is the gap this belongs to — and the archive is said to pay for tidying.</p>`;
+      case T.ObjCandle: {
+        const o = g.level.objects.get(i);
+        const names = ['FOR WHAT WAS TAKEN', 'FOR SHE WHO WAITS', 'FOR YOU, WHO CAME DOWN'];
+        const dedic = names[Number(o?.ord ?? 0)] ?? names[0];
+        const state = o?.lit === 1 ? 'It is lit, and it will not gutter again.' : 'It is cold. Walk into it to set a flame.';
+        return `<h3>A votive candle</h3><p>Wax-lettered on the shoulder: <b>${dedic}</b>. ${state}</p><p class="ex-fla">The vigil-rule is pressed into the base of all three, in the Vestal’s own thumbnail: <i>the stolen, then the keeper, then yourself</i>. The Garden does not forgive a vigil begun selfishly.</p>`;
+      }
+      case T.ObjScale:
+        return `<h3>The tithe-scale</h3><p>A balance of silk and bone thread. One pan holds a wrapped ration nine generations old; the other is empty, sized for a flask. Walk into it, carrying something bottled, to make a deposit — it will take from your largest stock of potions.</p><p class="ex-fla">The Mother keeps a larder against the day the dark runs out of everything else. Larders honor deposits. Banks pay interest.</p>`;
+      case T.ObjCairn:
+        return `<h3>A grave-elf cairn</h3><p>Stones over a small, patient skeleton. Its hand is closed around something. Walk into it to unfold the fingers.</p><p class="ex-fla">The elves buried their forests, then sat down beside them. This one died mid-errand, still holding its delivery out toward the deep.</p>`;
+      case T.ObjHollow:
+        return `<h3>A warm hollow</h3><p>A root-lined socket in the loam, blood-warm and exactly seed-shaped. Walk into it to plant what fits.</p><p class="ex-fla">Every root in the walls leans toward it. Roots do not dig toward their pasts; they dig toward their futures — and this one has been dug to fit something that has not been planted yet.</p>`;
+      case T.ObjCell: {
+        const o = g.level.objects.get(i);
+        const hints = [
+          'The inside of its lock is polished bright by patient fingers.',
+          'Tallies are scratched into the inside of the frame, counting toward something.',
+          'No marks. No wear. The dust on the hinge has never once been disturbed.',
+        ];
+        const hint = hints[Number(o?.h ?? 0)] ?? hints[0];
+        return `<h3>A cell of the Vault</h3><p>Barred in vault-iron, holding shut without a lock that works. Walk into it to open it.</p><p><b>Inspection:</b> ${hint}</p><p class="ex-fla">Every door here locks from the outside AND the inside. Read the ledger before you choose: occupants who chose the chains do not care to be chosen out of them.</p>`;
+      }
+      case T.ObjLedger:
+        return `<h3>The reservation ledger</h3><p>Chained to its stand, open to the final page. Walk into it to read.</p><p class="ex-fla">The Vault records no releases. It records, in the oldest ink below, one arrival that has not happened yet.</p>`;
+      case T.ObjBasin:
+        return `<h3>A basin of still water</h3><p>The surface has not moved in nine generations. Walk into it to look — knowing that the Cartographer’s advice about reflections in the Cistern was <i>don’t</i>.</p><p class="ex-fla">The water here does not show you. It shows what the Unlight sees — and the Unlight sees every way below, including the ones the room is hiding.</p>`;
       default:
         return `<h3>Worked stone</h3><p>Bare floor of ${s.name}.</p>`;
     }
@@ -953,6 +1115,12 @@ export class UI {
           this.showRaceSelect();
         }
         if (k === 'h') this.showHall();
+        if (k === 'd') {
+          Game.clearSave();
+          this.pendingSeed = Game.dailySeed();
+          this.pendingDaily = true;
+          this.showRaceSelect();
+        }
         return;
       case 'name':
         if (k === 'Escape') this.showClassSelect();
@@ -978,6 +1146,13 @@ export class UI {
       case 'dead':
       case 'win':
         if (k === 'Enter') location.reload();
+        if (k === 'v') this.showMorgue();
+        return;
+      case 'morgue':
+        this.morgueKey(k);
+        return;
+      case 'itemdetail':
+        this.itemDetailKey(k);
         return;
       case 'inv':
         this.invKey(k);
@@ -1009,6 +1184,19 @@ export class UI {
       this.mode = 'play';
       this.invSel = -1;
       this.hide();
+      return;
+    }
+    // inspect: '?' on the selected item, or Shift+letter on any item
+    if (k === '?' && this.invSel >= 0 && g.player.inventory[this.invSel]) {
+      this.showItemDetail(g.player.inventory[this.invSel]);
+      return;
+    }
+    if (/^[A-Z]$/.test(k)) {
+      const di = LETTERS.indexOf(k.toLowerCase());
+      if (di >= 0 && di < g.player.inventory.length) {
+        this.invSel = di;
+        this.showItemDetail(g.player.inventory[di]);
+      }
       return;
     }
     if (k >= '1' && k <= '5') {
@@ -1101,6 +1289,7 @@ export class UI {
       case '.': g.wait(); break;
       case 'g': case ',': g.pickup(); break;
       case '>': g.descend(); break;
+      case '<': g.climb(); break;
       case 'i': this.showInventory(); return;
       case 'p': g.pray(); break;
       case 'o': g.autoExplore(); break;
@@ -1184,8 +1373,8 @@ export class UI {
       <div class="hud-head">
         <img class="doll" src="${playerDollURL(p.raceId, p.equip)}" alt="" />
         <div>
-          <h1>${p.charName ?? p.name}</h1>
-          <div class="sub">${p.name} · ${g.locationName()} · turn ${p.turns}</div>
+          <h1>${esc(p.charName ?? p.name)}</h1>
+          <div class="sub">${p.name} · ${g.locationName()} · turn ${p.turns}${g.daily ? ' · <span style="color:#c9a24b">daily</span>' : ''}</div>
         </div>
       </div>
       ${bar('hp', Math.max(0, p.hp), g.maxHpTot(), `HP ${Math.max(0, p.hp)}/${g.maxHpTot()}`)}

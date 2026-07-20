@@ -1,9 +1,10 @@
 import { RNG } from './rng';
 import {
-  T, idx, isWalkable, isTransparent,
+  T, idx, isPuzzleTile, isWalkable, isTransparent,
   type DamageType, type FX, type Item, type LevelMap, type Monster, type Msg,
-  type Player, type Status, type StatusKind,
+  type ObjData, type Player, type Status, type StatusKind,
 } from './types';
+import { interactObject } from './objects';
 import {
   ARMORS, BRANCH_BY_ID, BRANCH_PAIRS, CLASSES, CORRUPTIONS, GODS, MAX_DEPTH, MONSTER_BY_ID, RACES,
   STRATA, WEAPONS, genItem, itemName, makeIdentify, mkItem, stratumFor,
@@ -18,6 +19,39 @@ export const C = {
   dmg: '#e06a6a', good: '#7fce7f', info: '#8f887c', warn: '#e0a050',
   god: '#b08ae8', item: '#c8bfae', bad: '#d43a4a', bold: '#e8e0d0',
 };
+
+// A floor exactly as the player left it — monsters, loot, explored fog, even
+// abandoned allies. Lets stairs work in both directions.
+interface StoredFloor {
+  level: LevelMap;
+  monsters: Monster[];
+  items: Item[];
+  merchantStock: Item[] | null;
+}
+
+type PackedMon = {
+  id: string; x: number; y: number; hp: number; maxHp: number; dmgBonus: number;
+  energy: number; awake: boolean; friendly: boolean; statuses: Status[]; uid: number;
+};
+
+const packMon = (m: Monster): PackedMon => ({
+  id: m.def.id, x: m.x, y: m.y, hp: m.hp, maxHp: m.maxHp, dmgBonus: m.dmgBonus,
+  energy: m.energy, awake: m.awake, friendly: m.friendly, statuses: m.statuses, uid: m.uid,
+});
+
+const unpackMons = (arr: PackedMon[]): Monster[] =>
+  arr.filter((m) => MONSTER_BY_ID.has(m.id)).map((m) => ({
+    uid: m.uid, def: MONSTER_BY_ID.get(m.id)!, x: m.x, y: m.y, hp: m.hp, maxHp: m.maxHp,
+    dmgBonus: m.dmgBonus, energy: m.energy, awake: m.awake, friendly: m.friendly, statuses: m.statuses,
+  }));
+
+// Uint8Array <-> compact printable string (values offset past JSON-special chars)
+const pack8 = (a: Uint8Array): string => {
+  let s = '';
+  for (let i = 0; i < a.length; i++) s += String.fromCharCode(a[i] + 40);
+  return s;
+};
+const unpack8 = (s: string): Uint8Array => Uint8Array.from(s, (c) => c.charCodeAt(0) - 40);
 
 export class Game {
   rng: RNG;
@@ -40,17 +74,19 @@ export class Game {
   bestiary = new Set<string>(); // monster ids the player has seen (codex unlocks)
   bestiaryKills: Record<string, number> = {};
   whispersFired: string[] = [];
+  branchHurt = false; // took damage inside current branch (deed tracking)
   branch: string | null = null;
   branchPos = 0;
   branchesDone: string[] = [];
   runBranches: string[] = [];
   foundUniques = new Set<string>();
   merchantStock: Item[] | null = null; // per-level; null until visited
+  floorCache = new Map<string, StoredFloor>(); // floors keep their state when you leave
   shopOpen = false;
   corruptionOffer: string[] | null = null; // two corruption ids, set when praying at a warped altar
 
   hasCorr(id: string): boolean {
-    return this.player?.corruptions.includes(id) ?? false;
+    return this.player?.corruptions?.includes(id) ?? false;
   }
 
   acceptCorruption(id: string | null): void {
@@ -79,6 +115,7 @@ export class Game {
     this.msg(`The edit is made. You have gained: ${def.name}.`, C.god);
     this.msg(`${def.lore}`, '#a89cc4');
     if (p.corruptions.length === 1) this.chroniclePage();
+    if (p.corruptions.length >= 3) this.earnDeed('edited3');
     this.dirty = true;
     this.advanceWorld();
   }
@@ -117,6 +154,13 @@ export class Game {
     } catch { /* ignore */ }
   }
 
+  earnDeed(id: string): void {
+    if (this.deeds.includes(id)) return;
+    this.deeds.push(id);
+    this.chroniclePage();
+    this.dirty = true;
+  }
+
   chroniclePage(): void {
     this.msg('✎ A page of the Chronicle writes itself. (c to read)', C.god);
   }
@@ -133,12 +177,17 @@ export class Game {
           w: L.w, h: L.h, depth: L.depth, stratum: L.stratum,
           tiles: Array.from(L.tiles), explored: Array.from(L.explored),
           lights: L.lights, decals: [...L.decals], altarGod: [...L.altarGod], gates: [...L.gates],
+          objects: [...L.objects],
         },
-        monsters: this.monsters.map((m) => ({
-          id: m.def.id, x: m.x, y: m.y, hp: m.hp, maxHp: m.maxHp, dmgBonus: m.dmgBonus,
-          energy: m.energy, awake: m.awake, friendly: m.friendly, statuses: m.statuses, uid: m.uid,
-        })),
+        monsters: this.monsters.map(packMon),
         items: this.items,
+        cache: [...this.floorCache].map(([k, f]) => [k, {
+          w: f.level.w, h: f.level.h, depth: f.level.depth, stratum: f.level.stratum,
+          tiles: pack8(f.level.tiles), explored: pack8(f.level.explored),
+          lights: f.level.lights, decals: [...f.level.decals], altarGod: [...f.level.altarGod], gates: [...f.level.gates],
+          objects: [...f.level.objects],
+          monsters: f.monsters.map(packMon), items: f.items, merchantStock: f.merchantStock,
+        }]),
         ident: {
           known: [...this.ident.known], potion: [...this.ident.potionFlavor],
           scroll: [...this.ident.scrollFlavor], ring: [...this.ident.ringFlavor], amulet: [...this.ident.amuletFlavor],
@@ -147,7 +196,7 @@ export class Game {
         bestiary: [...this.bestiary], bestiaryKills: this.bestiaryKills,
         branch: this.branch, branchPos: this.branchPos, branchesDone: this.branchesDone,
         runBranches: this.runBranches, whispersFired: this.whispersFired, foundUniques: [...this.foundUniques],
-        merchantStock: this.merchantStock,
+        merchantStock: this.merchantStock, daily: this.daily, deeds: this.deeds,
         msgs: this.msgs.slice(-30),
       };
       localStorage.setItem('gloomdelve-save', JSON.stringify(data));
@@ -182,14 +231,27 @@ export class Game {
         visible: new Uint8Array(d.level.w * d.level.h),
         lights: d.level.lights, decals: new Map(d.level.decals), altarGod: new Map(d.level.altarGod),
         gates: new Map(d.level.gates ?? []),
+        objects: new Map(d.level.objects ?? []),
       };
-      this.monsters = (d.monsters as { id: string; x: number; y: number; hp: number; maxHp: number; dmgBonus: number; energy: number; awake: boolean; friendly: boolean; statuses: Status[]; uid: number }[])
-        .filter((m) => MONSTER_BY_ID.has(m.id))
-        .map((m) => ({
-          uid: m.uid, def: MONSTER_BY_ID.get(m.id)!, x: m.x, y: m.y, hp: m.hp, maxHp: m.maxHp,
-          dmgBonus: m.dmgBonus, energy: m.energy, awake: m.awake, friendly: m.friendly, statuses: m.statuses,
-        }));
+      this.monsters = unpackMons(d.monsters as PackedMon[]);
       this.items = d.items;
+      this.floorCache = new Map();
+      for (const [k, f] of (d.cache ?? []) as [string, {
+        w: number; h: number; depth: number; stratum: number; tiles: string; explored: string;
+        lights: LevelMap['lights']; decals: [number, string][]; altarGod: [number, string][]; gates: [number, string][];
+        objects?: [number, ObjData][];
+        monsters: PackedMon[]; items: Item[]; merchantStock: Item[] | null;
+      }][]) {
+        this.floorCache.set(k, {
+          level: {
+            w: f.w, h: f.h, depth: f.depth, stratum: f.stratum,
+            tiles: unpack8(f.tiles), explored: unpack8(f.explored), visible: new Uint8Array(f.w * f.h),
+            lights: f.lights, decals: new Map(f.decals), altarGod: new Map(f.altarGod), gates: new Map(f.gates),
+            objects: new Map(f.objects ?? []),
+          },
+          monsters: unpackMons(f.monsters), items: f.items, merchantStock: f.merchantStock ?? null,
+        });
+      }
       this.ident = {
         known: new Set(d.ident.known), potionFlavor: new Map(d.ident.potion),
         scrollFlavor: new Map(d.ident.scroll), ringFlavor: new Map(d.ident.ring), amuletFlavor: new Map(d.ident.amulet),
@@ -205,7 +267,10 @@ export class Game {
       this.runBranches = d.runBranches ?? ['ossuary', 'silkfen', 'chains'];
       this.foundUniques = new Set(d.foundUniques ?? []);
       this.merchantStock = d.merchantStock ?? null;
+      this.daily = d.daily ?? false;
+      this.deeds = d.deeds ?? [];
       if (!this.player.charName) this.player.charName = 'the Delver';
+      this.player.corruptions ??= [];
       this.msgs = d.msgs;
       this.msg('You return to the dark, exactly where it left you.', C.god);
       this.updateFOV();
@@ -218,7 +283,46 @@ export class Game {
   }
 
   // ============================================== run setup
-  startRun(raceId: string, classId: string, charName = 'the Delver'): void {
+  static dailySeed(): number {
+    const day = new Date().toISOString().slice(0, 10);
+    let h = 0x811c9dc5;
+    for (const ch of `gloomdelve-${day}`) {
+      h ^= ch.charCodeAt(0);
+      h = Math.imul(h, 0x01000193);
+    }
+    return h >>> 0;
+  }
+
+  daily = false;
+  deeds: string[] = [];
+
+  startRun(raceId: string, classId: string, charName = 'the Delver', seed?: number, daily = false): void {
+    charName = charName.replace(/[<>&"'`]/g, '').trim() || 'the Delver';
+    // every run gets its own seed and fresh stream — no repetition between runs
+    this.seed = seed ?? ((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);
+    this.daily = daily;
+    this.rng = new RNG(this.seed);
+    this.ident = makeIdentify(this.rng);
+    this.msgs = [];
+    this.fx = [];
+    this.over = null;
+    this.deathCause = '';
+    this.monsters = [];
+    this.items = [];
+    this.seenStrata.clear();
+    this.seenBosses.clear();
+    this.branch = null;
+    this.branchPos = 0;
+    this.branchesDone = [];
+    this.foundUniques = new Set();
+    this.whispersFired = [];
+    this.merchantStock = null;
+    this.floorCache.clear();
+    this.corruptionOffer = null;
+    this.shopOpen = false;
+    this.deeds = [];
+    this.hpAcc = 0;
+    this.mpAcc = 0;
     this.race = RACES.find((r) => r.id === raceId)!;
     this.cls = CLASSES.find((c) => c.id === classId)!;
     const str = 10 + this.race.str + (this.cls.statFav[0] === 'str' ? 1 : 0) + (this.cls.statFav[1] === 'str' ? 1 : 0);
@@ -250,9 +354,52 @@ export class Game {
     this.msg('Somewhere below, the Unlight Sovereign waits on its throne. Descend. (? for help)', C.god);
   }
 
-  newLevel(depth: number): void {
+  // remember the current floor exactly as it stands (called before every transition)
+  private stashFloor(): void {
+    if (!this.level) return;
+    const key = this.branch ? `b${this.branch}:${this.branchPos}` : `d${this.depth}`;
+    this.floorCache.set(key, {
+      level: this.level, monsters: this.monsters, items: this.items, merchantStock: this.merchantStock,
+    });
+  }
+
+  // drop the player on the first tile of the given kind (arrival point of a revisited floor)
+  private placeAt(tile: T): void {
+    const L = this.level;
+    for (let i = 0; i < L.tiles.length; i++) {
+      if (L.tiles[i] === tile) {
+        this.player.x = i % L.w;
+        this.player.y = Math.floor(i / L.w);
+        return;
+      }
+    }
+  }
+
+  private restoreFloor(f: StoredFloor, at: T): void {
+    this.level = f.level;
+    this.monsters = f.monsters;
+    this.items = f.items;
+    this.merchantStock = f.merchantStock;
+    this.placeAt(at);
+    sfx.play('stairs');
+    sfx.ambient(this.level.stratum);
+    this.updateFOV();
+    this.distMap = bfsDistance(this.level, this.player.x, this.player.y, true);
+    this.dirty = true;
+    this.save();
+  }
+
+  newLevel(depth: number, arrive: 'down' | 'up' = 'down'): void {
     this.depth = depth;
     this.branch = null;
+    const cached = this.floorCache.get(`d${depth}`);
+    if (cached) {
+      this.restoreFloor(cached, arrive === 'up' ? T.StairsDown : T.StairsUp);
+      this.msg(arrive === 'up'
+        ? `You climb back to depth ${depth}. ${stratumFor(depth).name} remembers you.`
+        : `You descend again to depth ${depth}. Nothing here has forgiven your absence.`, C.info);
+      return;
+    }
     this.merchantStock = null;
     const gen = generateLevel(depth, this.rng, this.race?.luck ?? 0, {
       doneBranches: new Set(this.branchesDone),
@@ -264,6 +411,7 @@ export class Game {
     this.items = gen.items;
     this.player.x = gen.px;
     this.player.y = gen.py;
+    if (arrive === 'up') this.placeAt(T.StairsDown); // freshly generated while climbing (old saves)
     const s = stratumFor(depth);
     const si = STRATA.indexOf(s);
     if (!this.seenStrata.has(si)) {
@@ -275,6 +423,7 @@ export class Game {
       this.msg(`You descend to depth ${depth}. ${s.name}.`, C.info);
     }
     if (this.player.godId === 'moths') this.gainPiety(8, 'The Mother of Moths delights in your descent.');
+    if (depth >= 15 && !this.player.godId) this.earnDeed('godless');
     const wh = WHISPERS[depth];
     if (wh && !this.whispersFired.includes(wh.id)) {
       this.whispersFired.push(wh.id);
@@ -313,8 +462,10 @@ export class Game {
   enterBranch(id: string): void {
     const b = BRANCH_BY_ID.get(id);
     if (!b) return;
+    this.stashFloor();
     this.branch = id;
     this.branchPos = 0;
+    this.branchHurt = false;
     this.makeBranchLevel();
     this.msg(`— ${b.name} —`, C.bold);
     this.msg(b.intro, C.info);
@@ -331,8 +482,34 @@ export class Game {
     sfx.play('stairs');
   }
 
-  private makeBranchLevel(): void {
+  climb(): void {
+    const t = this.tileAt(this.player.x, this.player.y);
+    if (t !== T.StairsUp) {
+      if (this.branch && this.branchPos === 0) this.msg('The gate behind you is shut. The only way out of this place is through it.', C.info);
+      else if (!this.branch && this.depth === 1) this.msg('The way to the surface sealed itself the moment you entered. There is only down.', C.info);
+      else this.msg('There is no way up here.', C.info);
+      return;
+    }
+    const allies = this.monsters.filter((m) => m.friendly);
+    if (allies.length) this.msg('Your servants cannot follow. They will wait where you leave them.', C.info);
+    this.stashFloor();
+    if (this.branch) {
+      this.branchPos--;
+      this.makeBranchLevel('up');
+      const b = BRANCH_BY_ID.get(this.branch)!;
+      this.msg(`You climb back up through ${b.name}.`, C.info);
+    } else {
+      this.newLevel(this.depth - 1, 'up');
+    }
+  }
+
+  private makeBranchLevel(arrive: 'down' | 'up' = 'down'): void {
     const b = BRANCH_BY_ID.get(this.branch!)!;
+    const cached = this.floorCache.get(`b${this.branch}:${this.branchPos}`);
+    if (cached) {
+      this.restoreFloor(cached, arrive === 'up' ? T.StairsDown : T.StairsUp);
+      return;
+    }
     const gen = generateLevel(this.effDepth(), this.rng, this.race?.luck ?? 0, { branch: b, branchPos: this.branchPos, uniques: this.foundUniques });
     this.level = gen.map;
     this.monsters = gen.monsters;
@@ -350,10 +527,29 @@ export class Game {
     if (!this.branchesDone.includes(b.id)) this.branchesDone.push(b.id);
     this.branch = null;
     this.branchPos = 0;
-    const returnDepth = this.depth;
+    // the branch is done — its floors will never be walked again
+    for (const k of [...this.floorCache.keys()]) if (k.startsWith(`b${b.id}:`)) this.floorCache.delete(k);
     this.msg(`The portal spits you back into the great descent. ${b.name} is behind you — and it will remember.`, C.god);
+    if (!this.branchHurt) this.earnDeed('untouched');
     this.gainXp(20 + b.entry * 5);
-    this.newLevel(returnDepth);
+    const cached = this.floorCache.get(`d${this.depth}`);
+    if (cached) {
+      // step out of the very gate you entered, then let it die
+      this.restoreFloor(cached, T.StairsUp);
+      const L = this.level;
+      for (const [i, id] of [...L.gates]) {
+        if (id !== b.id) continue;
+        this.player.x = i % L.w;
+        this.player.y = Math.floor(i / L.w);
+        L.tiles[i] = T.Rubble;
+        L.gates.delete(i);
+        this.msg('Behind you the gate collapses into cold rubble.', C.info);
+      }
+      this.updateFOV();
+      this.distMap = bfsDistance(L, this.player.x, this.player.y, true);
+    } else {
+      this.newLevel(this.depth);
+    }
   }
 
   // ============================================== messages / fx
@@ -585,6 +781,11 @@ export class Game {
       this.advanceWorld();
       return true;
     }
+    if (isPuzzleTile(t)) {
+      // strange branch furniture answers to touch
+      if (interactObject(this, nx, ny)) this.advanceWorld();
+      return true;
+    }
     if (!isWalkable(t)) return false;
     p.x = nx; p.y = ny;
     this.afterStep();
@@ -607,6 +808,7 @@ export class Game {
     if (here.length === 1) this.msg(`You see ${itemName(here[0], this.ident)} here. (g to take)`, C.item);
     else if (here.length > 1) this.msg(`Several things lie here. (g to take)`, C.item);
     if (t === T.StairsDown) this.msg('A stairway descends into deeper dark. (> to descend)', C.warn);
+    if (t === T.StairsUp) this.msg('A stairway climbs back toward shallower dark. (< to ascend)', C.warn);
     if (t === T.BranchDown) {
       const b = BRANCH_BY_ID.get(this.level.gates.get(idx(p.x, p.y, this.level.w)) ?? '');
       if (b) this.msg(`A sealed gate: ${b.name}, ${b.sub}. An optional path — its prize is guarded. (> to enter)`, C.warn);
@@ -670,6 +872,7 @@ export class Game {
     }
     const allies = this.monsters.filter((m) => m.friendly);
     if (allies.length) this.msg('Your servants cannot follow. They watch you go.', C.info);
+    this.stashFloor();
     if (this.branch) {
       this.advanceBranch();
     } else {
@@ -874,6 +1077,7 @@ export class Game {
         Game.clearSave();
         this.syncMeta('win');
         this.recordHall();
+        try { localStorage.setItem('gloomdelve-morgue-last', this.morgueText()); } catch { /* ignore */ }
         this.msg('The Unlight gutters... and dies. Dawn, impossibly, reaches even here.', C.warn);
         return;
       }
@@ -983,6 +1187,7 @@ export class Game {
       }
     }
     if (dmg <= 0) return;
+    if (this.branch) this.branchHurt = true;
     p.hp -= dmg;
     sfx.play('hurt');
     this.pushFx({ t: 'float', x: p.x, y: p.y, text: String(dmg), color: '#ff5060' });
@@ -1004,6 +1209,7 @@ export class Game {
       Game.clearSave();
       this.syncMeta('death');
       this.recordHall();
+      try { localStorage.setItem('gloomdelve-morgue-last', this.morgueText()); } catch { /* ignore */ }
       this.msg(`You are slain by ${source}...`, C.bad);
       this.pushFx({ t: 'flash', color: '#9b1c2e' });
     }
@@ -1076,6 +1282,42 @@ export class Game {
     return true;
   }
 
+  morgueText(): string {
+    const p = this.player;
+    const eq = (it: Item | null): string => (it ? itemName(it, this.ident) : '—');
+    const branches = this.branchesDone.map((b) => BRANCH_BY_ID.get(b)?.name ?? b).join(', ') || 'none';
+    const corrs = p.corruptions.map((id) => CORRUPTIONS.find((c) => c.id === id)?.name ?? id).join(', ') || 'none';
+    const uniques = [...this.foundUniques].join(', ') || 'none';
+    const fate = this.over === 'win' ? 'ASCENDED — took the crown of the Unlight'
+      : this.over === 'dead' ? `slain by ${this.deathCause}` : 'still delving';
+    const topKills = Object.entries(this.bestiaryKills).sort((a, b) => b[1] - a[1]).slice(0, 5)
+      .map(([id, n]) => `${MONSTER_BY_ID.get(id)?.name ?? id} ×${n}`).join(', ') || 'none';
+    return [
+      '=========== GLOOMDELVE morgue file ===========',
+      `${p.charName}, ${p.name}`,
+      `${new Date().toISOString().slice(0, 10)} · seed ${this.seed}${this.daily ? ' · DAILY DESCENT' : ''}`,
+      '',
+      `Fate: ${fate}`,
+      `Where: ${this.locationName()}`,
+      `Score: ${this.score()}`,
+      '',
+      `Level ${p.level} · ${p.kills} kills · ${p.turns} turns · ${p.gold} gold`,
+      `STR ${p.str}  DEX ${p.dex}  WIL ${p.wil} · AC ${this.playerAC()}  EV ${this.playerEV()}`,
+      `HP ${Math.max(0, p.hp)}/${this.maxHpTot()} · MP ${p.mp}/${this.maxMpTot()}`,
+      `God: ${p.godId ? `${GODS.find((g) => g.id === p.godId)!.name} (piety ${p.piety})` : 'godless'}`,
+      `Edits: ${corrs}`,
+      '',
+      `Wielding: ${eq(p.equip.weapon)}`,
+      `Wearing:  ${eq(p.equip.body)}`,
+      `Jewelry:  ${[p.equip.amulet, p.equip.ring1, p.equip.ring2].filter(Boolean).map((x) => itemName(x!, this.ident)).join(', ') || '—'}`,
+      '',
+      `Branches cleared: ${branches}`,
+      `Artifacts found:  ${uniques}`,
+      `Most slain: ${topKills}`,
+      '==============================================',
+    ].join('\n');
+  }
+
   score(): number {
     const p = this.player;
     return this.depth * 100 + p.level * 50 + p.kills * 10 + p.gold +
@@ -1091,7 +1333,7 @@ export class Game {
       const hall = Game.loadHall();
       hall.push({
         name: this.player.charName || 'the Delver', title: this.player.name,
-        outcome: this.over === 'win' ? 'ASCENDED' : `slain by ${this.deathCause}`,
+        outcome: (this.over === 'win' ? 'ASCENDED' : `slain by ${this.deathCause}`) + (this.daily ? ' [daily]' : ''),
         depth: this.depth, level: this.player.level, score: this.score(),
         date: new Date().toISOString().slice(0, 10), cause: this.deathCause,
       });

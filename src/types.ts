@@ -16,7 +16,27 @@ export enum T {
   PortalBack,
   Merchant,
   WarpAltar,
+  StairsUp,
+  // mysterious branch objects (append-only: tile values persist in saves)
+  ObjNiche,   // ossuary: gap in the bone-shelves (opaque; becomes the reliquary door)
+  ObjSkull,   // ossuary: misfiled remains, waiting to be re-filed
+  ObjCandle,  // waxgarden: one of three cold votive candles
+  ObjScale,   // silkfen: the Mother's tithe-scale
+  ObjCairn,   // roots: grave-elf cairn clutching a charred seed
+  ObjHollow,  // roots: warm seed-shaped hollow in the loam
+  ObjCell,    // chains: a barred cell door (opaque)
+  ObjLedger,  // chains: the reservation ledger on its stand
+  ObjBasin,   // cistern: a basin of too-still water
 }
+
+// walk-into-to-touch puzzle furniture (solid, but not wall)
+export function isPuzzleTile(t: number): boolean {
+  return t >= T.ObjNiche && t <= T.ObjBasin;
+}
+
+// per-tile state for puzzle objects; key -1 holds floor-wide puzzle metadata
+export type ObjData = Record<string, number | string>;
+export const OBJ_META = -1;
 
 export type DamageType = 'phys' | 'fire' | 'poison' | 'necro' | 'cold';
 
@@ -50,6 +70,7 @@ export interface LevelMap {
   decals: Map<number, string>; // idx -> css color (blood etc.)
   altarGod: Map<number, string>;
   gates: Map<number, string>; // idx -> branch id
+  objects: Map<number, ObjData>; // idx -> puzzle object state (OBJ_META for floor-wide)
 }
 
 // ---------- monsters ----------
@@ -179,9 +200,10 @@ export const idx = (x: number, y: number, w: number) => y * w + x;
 export function isWalkable(t: number): boolean {
   return t === T.Floor || t === T.DoorOpen || t === T.StairsDown || t === T.Water ||
     t === T.Lava || t === T.Altar || t === T.Fungus || t === T.Bones || t === T.Rubble ||
-    t === T.BranchDown || t === T.PortalBack || t === T.WarpAltar;
+    t === T.BranchDown || t === T.PortalBack || t === T.WarpAltar || t === T.StairsUp;
 }
 
 export function isTransparent(t: number): boolean {
-  return t !== T.Wall && t !== T.DoorClosed && t !== T.Torch;
+  // ObjNiche is a laden shelf, ObjCell a solid cell door: both hide what waits behind
+  return t !== T.Wall && t !== T.DoorClosed && t !== T.Torch && t !== T.ObjNiche && t !== T.ObjCell;
 }

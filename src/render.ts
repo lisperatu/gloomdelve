@@ -1,4 +1,4 @@
-import { T, idx, type FX } from './types';
+import { T, idx, isPuzzleTile, type FX } from './types';
 import { STRATA } from './data';
 import { itemSprite, monsterSprite, playerDoll, sprite, terrain } from './sprites';
 import type { Game } from './game';
@@ -192,6 +192,7 @@ export class Renderer {
           case T.DoorClosed: feat('doorClosed', '#8a6a42'); break;
           case T.DoorOpen: feat('doorOpen', '#8a6a42'); break;
           case T.StairsDown: feat('stairs', '#d8d0c0', 10); break;
+          case T.StairsUp: feat('stairsup', '#cfd6e8', 10); break;
           case T.Altar: feat('altar', '#b08ae8', 12); break;
           case T.Fungus: feat('fungus', S.accent, vis ? 8 : 0); break;
           case T.Bones: feat('bones', '#b0a894'); break;
@@ -200,6 +201,20 @@ export class Renderer {
           case T.PortalBack: feat('portal', '#8a6cf0', 12); break;
           case T.Merchant: feat('humanoid', '#dcbe6e', 10); break;
           case T.WarpAltar: feat('altar', '#8ad45a', 14); break;
+          // mysterious branch objects
+          case T.ObjNiche: feat('obj_niche', '#c9b892'); break;
+          case T.ObjSkull: feat('obj_skull', '#d8d0b8', 8); break;
+          case T.ObjCandle: {
+            const lit = L.objects.get(i)?.lit === 1;
+            feat(lit ? 'obj_candle_lit' : 'obj_candle', '#e8d8a8', lit ? 12 : 0);
+            break;
+          }
+          case T.ObjScale: feat('obj_scale', '#d8d8ea', 7); break;
+          case T.ObjCairn: feat('obj_cairn', '#a89878', 6); break;
+          case T.ObjHollow: feat('obj_hollow', '#8a6a42', 7); break;
+          case T.ObjCell: feat('obj_cell', '#9aa4b8'); break;
+          case T.ObjLedger: feat('obj_ledger', '#b8a88a', 7); break;
+          case T.ObjBasin: feat('obj_basin', '#a8c8d8', 9); break;
         }
 
         // lighting overlay
@@ -518,11 +533,13 @@ export class Renderer {
         if (t === T.Water) c = 'rgba(60,110,160,0.8)';
         if (t === T.Lava) c = 'rgba(220,90,30,0.9)';
         if (t === T.StairsDown) c = '#e8e0d0';
+        if (t === T.StairsUp) c = '#c2cce8';
         if (t === T.Altar) c = '#b08ae8';
         if (t === T.BranchDown) c = '#dcbe6e';
         if (t === T.Merchant) c = '#ffd700';
         if (t === T.WarpAltar) c = '#8ad45a';
         if (t === T.PortalBack) c = '#a88cf0';
+        if (isPuzzleTile(t)) c = '#e8c860';
         ctx.fillStyle = c;
         ctx.fillRect(ox + x * s, oy + y * s, Math.max(1, s), Math.max(1, s));
       }

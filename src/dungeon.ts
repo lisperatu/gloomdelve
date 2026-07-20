@@ -1,6 +1,7 @@
 import { RNG } from './rng';
 import { T, idx, isWalkable, type LevelMap, type Monster, type MonsterDef, type Item } from './types';
 import { BOSS_FLOORS, BRANCHES, GODS, MONSTERS, MONSTER_BY_ID, STRATA, genItem, mkItem, stratumFor, type BranchDef } from './data';
+import { placeBranchObjects } from './objects';
 
 export interface GenResult {
   map: LevelMap;
@@ -170,6 +171,7 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
     decals: new Map(),
     altarGod: new Map(),
     gates: new Map(),
+    objects: new Map(),
   };
 
   let rooms: Room[] = [];
@@ -263,6 +265,9 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
   if (lastBranchLevel) map.tiles[best] = T.PortalBack;
   else if (depth < 20 || opts.branch) map.tiles[best] = T.StairsDown;
   const sx = best % W, sy = Math.floor(best / W);
+  // the way back up: every floor below the first remembers where you came from
+  const hasUp = opts.branch ? (opts.branchPos ?? 0) > 0 : depth > 1;
+  if (hasUp) map.tiles[pi] = T.StairsUp;
 
   // ---- warped altar of the Nameless Editor (rare, spine, depth 4+)
   if (!opts.branch && depth >= 4 && depth < 20 && rng.chance(0.28)) {
@@ -302,6 +307,11 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
         break;
       }
     }
+  }
+
+  // ---- mysterious branch objects (one small riddle per branch, first level)
+  if (opts.branch) {
+    placeBranchObjects(map, rng, opts.branch.id, opts.branchPos ?? 0, items, depth, luck, px, py);
   }
 
   // ---- monsters
@@ -357,7 +367,7 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
 
 function standable(map: LevelMap, x: number, y: number): boolean {
   const t = map.tiles[idx(x, y, map.w)];
-  return isWalkable(t) && t !== T.Lava && t !== T.StairsDown;
+  return isWalkable(t) && t !== T.Lava && t !== T.StairsDown && t !== T.StairsUp;
 }
 
 function warmLight(gen: string): [number, number, number] {

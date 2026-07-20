@@ -46,7 +46,8 @@ function stepTowards(g: Game, tx: number, ty: number): boolean {
     const t = g.tileAt(nx, ny);
     const mon = g.monsterAt(nx, ny);
     const attackable = mon && !mon.friendly && nx === tx && ny === ty;
-    if (!attackable && (!(isWalkable(t) || t === T.DoorClosed) || t === T.Lava || (mon && !mon.friendly))) continue;
+    const lavaOk = t === T.Lava && p.hp > 60; // tank a tick to cross ember rivers (humans blink/teleport)
+    if (!attackable && (!(isWalkable(t) || t === T.DoorClosed) || (t === T.Lava && !lavaOk) || (mon && !mon.friendly))) continue;
     const d = back[idx(nx, ny, g.level.w)];
     if (d < bd) { bd = d; best = [dx, dy]; }
   }
@@ -64,9 +65,14 @@ function findTile(g: Game, kinds: number[]): [number, number] | null {
 
 function act(g: Game, useBranches: boolean): void {
   const p = g.player;
+  // grab loot underfoot (autoExplore stops on it but never collected it)
+  if (g.items.some((i) => i.x === p.x && i.y === p.y)) { g.pickup(); return; }
   // emergency heal
   const heal = p.inventory.find((i) => i.kind === 'potion' && i.id === 'heal');
   if (p.hp < g.maxHpTot() * 0.35 && heal) { g.quaff(heal); return; }
+  // cure poison/burn before the ticks kill us (cleansing removes both)
+  const cleanse = p.inventory.find((i) => i.kind === 'potion' && i.id === 'cleansing');
+  if (cleanse && (g.hasStatus('poison') || g.hasStatus('burn')) && p.hp < g.maxHpTot() * 0.6) { g.quaff(cleanse); return; }
   // gear upgrades
   for (const it of [...p.inventory]) {
     if (it.kind === 'weapon' && wAvg(it) > (p.equip.weapon ? wAvg(p.equip.weapon) : 2)) { g.equipItem(it); return; }
@@ -89,8 +95,8 @@ function act(g: Game, useBranches: boolean): void {
       }
     }
     if (stepTowards(g, t.x, t.y)) return;
-    g.wait();
-    return;
+    if (d <= 1) { g.wait(); return; }
+    // foe visible but unreachable (across lava/water): keep exploring/descending instead of waiting forever
   }
   const here = g.tileAt(p.x, p.y);
   if (here === T.StairsDown || here === T.PortalBack || (here === T.BranchDown && useBranches)) {
@@ -122,7 +128,7 @@ function runOne(raceId: string, clsId: string, seed: number, useBranches: boolea
   let lastDepthChange = 0;
   let lastEff = 1;
   const t0 = Date.now();
-  for (let step = 0; step < 9000 && !g.over; step++) {
+  for (let step = 0; step < 22000 && !g.over; step++) {
     act(g, useBranches);
     if (g.player.turns === lastTurns) {
       lastProgress++;
@@ -133,8 +139,12 @@ function runOne(raceId: string, clsId: string, seed: number, useBranches: boolea
     }
     if (g.effDepth() !== lastEff) { lastEff = g.effDepth(); lastDepthChange = step; }
     if (step - lastDepthChange > 2500) break;      // stuck on one floor
-    if (g.player.turns > 11000) break;             // run too long
-    if (Date.now() - t0 > 20000) break;            // wall-clock safety
+    if (g.player.turns > 24000) break;             // run too long
+    if (Date.now() - t0 > 45000) break;            // wall-clock safety
+  }
+  if (!g.over && process.env.SIM_DEBUG) {
+    const here = g.tileAt(g.player.x, g.player.y);
+    console.log(`  [stall] ${clsId}/${raceId} seed=${seed} depth=${g.depth} eff=${g.effDepth()} branch=${g.branch ?? '-'} turns=${g.player.turns} hp=${g.player.hp}/${g.maxHpTot()} tile=${here} visFoes=${g.visibleMonsters().length}`);
   }
   return {
     race: raceId, cls: clsId,
