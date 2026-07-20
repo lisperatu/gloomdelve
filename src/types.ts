@@ -14,6 +14,7 @@ export enum T {
   Torch,
   BranchDown,
   PortalBack,
+  Merchant,
 }
 
 export type DamageType = 'phys' | 'fire' | 'poison' | 'necro' | 'cold';

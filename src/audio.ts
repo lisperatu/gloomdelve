@@ -2,6 +2,44 @@
 class SFXEngine {
   private ctx: AudioContext | null = null;
   private enabled = true;
+  muted = false;
+  private amb: { o1: OscillatorNode; o2: OscillatorNode; g: GainNode } | null = null;
+  private ambStratum = -1;
+
+  toggleMute(): boolean {
+    this.muted = !this.muted;
+    if (this.muted) this.stopAmbient();
+    else if (this.ambStratum >= 0) { const st = this.ambStratum; this.ambStratum = -1; this.ambient(st); }
+    return this.muted;
+  }
+
+  private stopAmbient(): void {
+    if (this.amb) {
+      try { this.amb.o1.stop(); this.amb.o2.stop(); } catch { /* ignore */ }
+      this.amb = null;
+    }
+  }
+
+  ambient(stratum: number): void {
+    if (stratum === this.ambStratum && this.amb) return;
+    this.ambStratum = stratum;
+    if (this.muted) return;
+    const ctx = this.ensure();
+    if (!ctx) return;
+    this.stopAmbient();
+    const base = [52, 47, 44, 58, 39, 50, 46, 42, 54, 45, 41][stratum] ?? 48;
+    const o1 = ctx.createOscillator();
+    const o2 = ctx.createOscillator();
+    const g = ctx.createGain();
+    o1.type = 'sine'; o2.type = 'triangle';
+    o1.frequency.value = base;
+    o2.frequency.value = base * 1.007; // slow beat
+    g.gain.value = 0.0;
+    g.gain.linearRampToValueAtTime(0.028, ctx.currentTime + 4);
+    o1.connect(g); o2.connect(g); g.connect(ctx.destination);
+    o1.start(); o2.start();
+    this.amb = { o1, o2, g };
+  }
 
   private ensure(): AudioContext | null {
     if (!this.enabled) return null;
@@ -54,6 +92,7 @@ class SFXEngine {
   }
 
   play(name: string): void {
+    if (this.muted) return;
     switch (name) {
       case 'hit': this.noise(0.07, 0.2, 900); break;
       case 'miss': this.noise(0.05, 0.07, 2000); break;

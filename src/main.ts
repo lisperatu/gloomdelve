@@ -8,6 +8,12 @@ const game = new Game(seed);
 const ren = new Renderer(canvas);
 const ui = new UI(game, ren);
 (window as unknown as { G: Game }).G = game; // debug handle
+// debug: sprite inspection (contact sheets)
+import('./sprites').then((S) => {
+  import('./data').then((D) => {
+    (window as unknown as { SPR: unknown }).SPR = { ...S, MONSTERS: D.MONSTERS, RACES: D.RACES };
+  });
+});
 
 window.addEventListener('beforeunload', () => {
   if (game.player && game.level && !game.over) game.save();

@@ -7,9 +7,10 @@ import { itemSprite, monsterSprite as monsterSpriteName, playerDollURL, spriteUR
 import { CHRONICLE, EGO_LORE, GOD_LORE, ITEM_LORE, MONSTER_LORE, MONSTER_LORE2, RACE_LORE, CLASS_LORE, UNIQUE_LORE } from './lore';
 import { MONSTERS, MONSTER_BY_ID } from './data';
 import { C, Game } from './game';
+import { sfx } from './audio';
 import type { Renderer } from './render';
 
-type Mode = 'title' | 'race' | 'class' | 'name' | 'play' | 'inv' | 'help' | 'target' | 'dead' | 'win' | 'examine' | 'codex' | 'hall';
+type Mode = 'title' | 'race' | 'class' | 'name' | 'play' | 'inv' | 'help' | 'target' | 'dead' | 'win' | 'examine' | 'codex' | 'hall' | 'shop';
 
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
 
@@ -149,6 +150,49 @@ export class UI {
     this.refreshHud();
   }
 
+  showShop(): void {
+    this.mode = 'shop';
+    const g = this.game;
+    const stock = g.merchantStock ?? [];
+    const rows = stock.length
+      ? stock.map((it, i) => {
+        const [spr, col] = itemSprite(it);
+        const price = g.priceOf(it);
+        const afford = g.player.gold >= price;
+        return `<div data-i="${i}" style="${afford ? '' : 'opacity:.45'}"><span class="key">${LETTERS[i]}</span>
+          <img class="spr" src="${spriteURL(spr, col)}" alt=""> ${itemName(it, g.ident)}
+          <span style="float:right;color:var(--gold)">${price} gold</span></div>`;
+      }).join('')
+      : '<div style="opacity:.5">"Sold out. The dead restock me eventually. They always do."</div>';
+    this.show(`
+      <div class="panel" style="min-width:520px;">
+        <h2>The Gravemerchant · you have ${g.player.gold} gold</h2>
+        <p class="flavor">"Everything here belonged to somebody brave. Prices reflect provenance."</p>
+        <div class="inv-list">${rows}</div>
+        <p class="hint"><span class="key">a–d</span> buy · <span class="key">Esc</span> walk away</p>
+      </div>`);
+    this.overlay.querySelectorAll('[data-i]').forEach((el) => {
+      el.addEventListener('click', () => {
+        this.game.buyItem(Number((el as HTMLElement).dataset.i));
+        this.showShop();
+      });
+    });
+  }
+
+  shopKey(k: string): void {
+    if (k === 'Escape') {
+      this.mode = 'play';
+      this.hide();
+      this.refreshHud();
+      return;
+    }
+    const i = LETTERS.indexOf(k);
+    if (i >= 0) {
+      this.game.buyItem(i);
+      this.showShop();
+    }
+  }
+
   showHall(): void {
     this.mode = 'hall';
     const hall = Game.loadHall();
@@ -185,6 +229,7 @@ export class UI {
           <div><span class="key">f</span> fire ranged weapon</div>
           <div><span class="key">x</span> examine anything</div>
           <div><span class="key">c</span> codex (lore & bestiary)</div>
+          <div><span class="key">m</span> mute sound</div>
           <div><span class="key">Tab</span> cycle targets</div>
           <div><span class="key">Esc</span> cancel / close</div>
         </div>
@@ -751,6 +796,8 @@ export class UI {
       }
       case 13: // PortalBack
         return `<h3>Portal home</h3><p>Press <span class="key">></span> to return to the great descent.</p>`;
+      case 14: // Merchant
+        return `<h3>The Gravemerchant</h3><p>Walk into him to trade. Gold accepted; questions discouraged.</p><p class="ex-fla">Nobody knows how he gets below faster than the delvers do. Nobody has ever seen him arrive, or leave, or blink.</p>`;
       default:
         return `<h3>Worked stone</h3><p>Bare floor of ${s.name}.</p>`;
     }
@@ -888,6 +935,9 @@ export class UI {
       case 'codex':
         this.codexKey(k);
         return;
+      case 'shop':
+        this.shopKey(k);
+        return;
       case 'play':
         this.playKey(k, e);
         return;
@@ -1009,6 +1059,7 @@ export class UI {
         return;
       }
       case 'c': this.codexSel = 0; this.showCodex(); return;
+      case 'm': g.msg(sfx.toggleMute() ? 'Sound muted.' : 'Sound on.', C.info); break;
       default: {
         // ability hotkeys — but 1-5 are also movement on numpad; use code check
         if (e.code.startsWith('Digit') && k >= '1' && k <= '5') {
@@ -1035,6 +1086,11 @@ export class UI {
 
   afterAction(): void {
     const g = this.game;
+    if (g.shopOpen) {
+      g.shopOpen = false;
+      this.showShop();
+      return;
+    }
     if (g.over === 'dead') setTimeout(() => this.showDeath(), 900);
     if (g.over === 'win') setTimeout(() => this.showWin(), 1200);
     this.refreshHud();

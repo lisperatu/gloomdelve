@@ -45,6 +45,8 @@ export class Game {
   branchesDone: string[] = [];
   runBranches: string[] = [];
   foundUniques = new Set<string>();
+  merchantStock: Item[] | null = null; // per-level; null until visited
+  shopOpen = false;
   hpAcc = 0;
   mpAcc = 0;
   dirty = true; // HUD refresh flag
@@ -110,6 +112,7 @@ export class Game {
         bestiary: [...this.bestiary], bestiaryKills: this.bestiaryKills,
         branch: this.branch, branchPos: this.branchPos, branchesDone: this.branchesDone,
         runBranches: this.runBranches, whispersFired: this.whispersFired, foundUniques: [...this.foundUniques],
+        merchantStock: this.merchantStock,
         msgs: this.msgs.slice(-30),
       };
       localStorage.setItem('gloomdelve-save', JSON.stringify(data));
@@ -166,6 +169,7 @@ export class Game {
       this.whispersFired = d.whispersFired ?? [];
       this.runBranches = d.runBranches ?? ['ossuary', 'silkfen', 'chains'];
       this.foundUniques = new Set(d.foundUniques ?? []);
+      this.merchantStock = d.merchantStock ?? null;
       if (!this.player.charName) this.player.charName = 'the Delver';
       this.msgs = d.msgs;
       this.msg('You return to the dark, exactly where it left you.', C.god);
@@ -213,6 +217,7 @@ export class Game {
   newLevel(depth: number): void {
     this.depth = depth;
     this.branch = null;
+    this.merchantStock = null;
     const gen = generateLevel(depth, this.rng, this.race?.luck ?? 0, {
       doneBranches: new Set(this.branchesDone),
       runBranches: new Set(this.runBranches.length ? this.runBranches : ['ossuary', 'silkfen', 'chains']),
@@ -248,6 +253,7 @@ export class Game {
       this.msg('A margin note beside a coin-tally: "Everyone who failed brought something worth stealing. You are becoming worth stealing."', '#a89cc4');
     }
     if (depth > 1) sfx.play('stairs');
+    sfx.ambient(this.level.stratum);
     this.updateFOV();
     this.distMap = bfsDistance(this.level, this.player.x, this.player.y, true);
     this.dirty = true;
@@ -276,6 +282,7 @@ export class Game {
     this.makeBranchLevel();
     this.msg(`— ${b.name} —`, C.bold);
     this.msg(b.intro, C.info);
+    sfx.ambient(this.level.stratum);
     this.msg('The gate grinds shut behind you. Somewhere ahead, a way home is being kept from you.', C.warn);
     sfx.play('stairs');
   }
@@ -515,6 +522,21 @@ export class Game {
       return true;
     }
     const t = this.tileAt(nx, ny);
+    if (t === T.Merchant) {
+      if (!this.merchantStock) {
+        this.merchantStock = [];
+        for (let n = 0; n < 4; n++) {
+          const it = genItem(Math.min(MAX_DEPTH, this.effDepth() + 1), this.rng, 1 + (this.race.luck ?? 0), this.foundUniques);
+          if (it.kind === 'gold') { n--; continue; }
+          this.ident.known.add(`${it.kind}:${it.id}`);
+          this.merchantStock.push(it);
+        }
+        this.msg('The Gravemerchant unfolds from the shadows and spreads a cloth of wares. "Everything here belonged to somebody brave."', C.warn);
+      }
+      this.shopOpen = true;
+      this.dirty = true;
+      return true;
+    }
     if (t === T.DoorClosed) {
       this.level.tiles[idx(nx, ny, this.level.w)] = T.DoorOpen;
       this.msg('You push open the rotten door.', C.info);
@@ -1020,6 +1042,29 @@ export class Game {
       hall.sort((a, b) => b.score - a.score);
       localStorage.setItem('gloomdelve-hall', JSON.stringify(hall.slice(0, 50)));
     } catch { /* ignore */ }
+  }
+
+  priceOf(it: Item): number {
+    const base = it.kind === 'potion' || it.kind === 'scroll' ? 18 : it.kind === 'ring' || it.kind === 'amulet' ? 55 : 30;
+    return base + this.effDepth() * 6 + it.plus * 15 + (it.ego ? 45 : 0) + (it.unique ? 120 : 0);
+  }
+
+  buyItem(i: number): void {
+    const stock = this.merchantStock;
+    if (!stock || !stock[i]) return;
+    const it = stock[i];
+    const price = this.priceOf(it);
+    if (this.player.gold < price) {
+      this.msg('"Not enough. The dead paid more, and they argued less."', C.warn);
+      return;
+    }
+    this.player.gold -= price;
+    stock.splice(i, 1);
+    it.x = -1; it.y = -1;
+    this.player.inventory.push(it);
+    sfx.play('gold');
+    this.msg(`Bought: ${itemName(it, this.ident)} for ${price} gold.`, C.item);
+    this.dirty = true;
   }
 
   // ============================================== items

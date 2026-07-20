@@ -264,6 +264,17 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
   else if (depth < 20 || opts.branch) map.tiles[best] = T.StairsDown;
   const sx = best % W, sy = Math.floor(best / W);
 
+  // ---- the Gravemerchant (rare, spine only)
+  if (!opts.branch && depth >= 2 && depth <= 18 && rng.chance(0.22)) {
+    for (let tries = 0; tries < 40; tries++) {
+      const mi = rng.pick(open);
+      if (map.tiles[mi] !== T.Floor) continue;
+      map.tiles[mi] = T.Merchant;
+      map.lights.push({ x: mi % W, y: Math.floor(mi / W), r: 4, color: [220, 190, 110], flicker: rng.next() * 10 });
+      break;
+    }
+  }
+
   // ---- branch gates on spine levels
   if (!opts.branch) {
     for (const b of BRANCHES) {

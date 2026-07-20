@@ -198,6 +198,7 @@ export class Renderer {
           case T.Rubble: feat('rubble', '#8a8278'); break;
           case T.BranchDown: feat('portal', '#dcbe6e', 12); break;
           case T.PortalBack: feat('portal', '#8a6cf0', 12); break;
+          case T.Merchant: feat('humanoid', '#dcbe6e', 10); break;
         }
 
         // lighting overlay
@@ -518,6 +519,7 @@ export class Renderer {
         if (t === T.StairsDown) c = '#e8e0d0';
         if (t === T.Altar) c = '#b08ae8';
         if (t === T.BranchDown) c = '#dcbe6e';
+        if (t === T.Merchant) c = '#ffd700';
         if (t === T.PortalBack) c = '#a88cf0';
         ctx.fillStyle = c;
         ctx.fillRect(ox + x * s, oy + y * s, Math.max(1, s), Math.max(1, s));

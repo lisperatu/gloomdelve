@@ -27,20 +27,20 @@ auto-save, procedural SFX, tile renderer with dynamic lighting.
 Also shipped in v0.2: player ranged weapons (sling/shortbow/grave-bow, `f` to fire),
 character naming, local hall of fame with scores, grouped inventory, equipped-item stats.
 
-Next up: **sprite review pass** — render a contact sheet of all creature sprites,
-critique each against what the creature is, redraw the weak ones.
+Sprite review pass: DONE (contact-sheet method; hound/spider/fungus/serpent/moth/djinn/
+sovereign redrawn). **v0.2 is complete.** Next: v0.3.
 
 - [x] **Branch pairs** (DCSS Swamp/Shoals pattern): each gate slot rolls one of two
       branches per run — e.g. The Ossuary *or* The Wax Garden; Silkfen *or* The Roots.
       Doubles branch variety without doubling per-run length.
 - [x] **Vaults**: hand-authored room templates (10–20) injected into the generators —
       shrines, treasure traps, ambush rooms, mini-stories in floor layout.
-- [ ] **The Gravemerchant**: a rare neutral NPC; gold finally buys identified goods.
+- [x] **The Gravemerchant**: a rare neutral NPC; gold finally buys identified goods.
 - [x] **Unique artifacts**: ~10 named items with fixed egos + their own lore entries
       (the Cartographer's own gear belongs in the game).
 - [x] **God wrath & conversion**: abandoning a god should cost; the Silent King should
       notice you leaving.
-- [ ] Audio toggle + per-stratum ambient drone.
+- [x] Audio toggle (`m`) + per-stratum ambient drone.
 
 ## v0.3 — More depth (mid-term)
 
