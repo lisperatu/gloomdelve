@@ -70,10 +70,15 @@ keyed by floor so it rides the cache. StairsUp appended to enum T (=16; append-o
 values live in saves). ui.ts local tile-const dupe removed — import the real T.
 registerSprites() added to sprites.ts so content files can add art without owning it.
 
-THREE AGENTS + integration queue: tuning (data.ts+sim), puzzle objects
-(game/dungeon/types/ui/render/lore + new files; also owns inventory item detail view),
-doll art (sprites.ts). After ALL complete: single merge+deploy, then integrate
-`staging/next-branches.md` — sub-branch architecture (branch stack), branch pair 4
-(Waiting Room/Museum of You + Office/Gift Shop sub-branches), new 'halls'/'gallery'
-generators. Then: more races/classes/gods (Accomplice god reveal — Office chapter is
-its setup), second ending, achievements, touch controls, Tauri, itch.io.
+ALL THREE AGENT PASSES LANDED + DEPLOYED (commits e6e709a, b307455): balance pass 2
+(death wall gone; NOTE: sim bot never picked up items before — pre-fix baselines are
+invalid), doll/overlay/held-weapon art redraw, branch riddles (src/objects.ts +
+objsprites.ts; puzzle state lives in LevelMap.objects and rides the floorCache;
+bump-to-interact in tryMove; 6 deed-gated chapters; codex deed/corrupt/death unlock
+bug fixed), inventory item detail (Shift+letter, EGO_FX table in ui.ts).
+NEXT: integrate `staging/next-branches.md` — sub-branch architecture (branch stack),
+branch pair 4 (Waiting Room/Museum of You + Office/Gift Shop sub-branches), 'halls'/
+'gallery' generators, 11 creatures (recalibrate staged stats vs post-tuning data.ts).
+Then: Accomplice god reveal (Office chapter is its setup), second ending, achievements,
+touch controls, Tauri, itch.io. Known follow-up: pyroclast sim stalls at ember lava
+(bot pathing, see tuning report in git history).
