@@ -15,6 +15,7 @@ export enum T {
   BranchDown,
   PortalBack,
   Merchant,
+  WarpAltar,
 }
 
 export type DamageType = 'phys' | 'fire' | 'poison' | 'necro' | 'cold';
@@ -154,6 +155,7 @@ export interface Player {
   turns: number;
   name: string;
   charName: string;
+  corruptions: string[];
 }
 
 // ---------- fx / messages ----------
@@ -177,7 +179,7 @@ export const idx = (x: number, y: number, w: number) => y * w + x;
 export function isWalkable(t: number): boolean {
   return t === T.Floor || t === T.DoorOpen || t === T.StairsDown || t === T.Water ||
     t === T.Lava || t === T.Altar || t === T.Fungus || t === T.Bones || t === T.Rubble ||
-    t === T.BranchDown || t === T.PortalBack;
+    t === T.BranchDown || t === T.PortalBack || t === T.WarpAltar;
 }
 
 export function isTransparent(t: number): boolean {

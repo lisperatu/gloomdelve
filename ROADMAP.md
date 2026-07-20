@@ -44,13 +44,20 @@ sovereign redrawn). **v0.2 is complete.** Next: v0.3.
 
 ## v0.3 — More depth (mid-term)
 
-- [ ] **Corruptions**: Qud-style mutations with trade-offs, offered at altars of a 7th,
+- [x] **Corruptions**: Qud-style mutations with trade-offs, offered at altars of a 7th,
       nameless power (grow a stinger, lose an eye: the dark edits you).
 - [x] **Monster AI pass** (flee when hurt, ranged kiting, pack flanking): kiting casters, fleeing at low HP, pack flanking.
 - [ ] **Morgue files**: shareable end-of-run report (seed, build, kills, chronicle pages found).
 - [ ] **Daily seed**: same dungeon for everyone, once a day.
 - [x] **Balance harness** (`npm run sim`): headless bot runs to tune the difficulty curve per class.
 - [ ] More Chronicle: chapters for branches completed without taking damage, godless wins, etc.
+
+**Standing rule for all future branches** (user directive): every new branch must carry
+a bizarre, distinct story — not a theme, a *situation*. Candidate seeds: the Auction of
+Hours (bid years of your life against the dead); the Museum of You (exhibits from runs
+that never happened); the Backwards River (a floor where cause follows effect); the
+Choir School (where the hymn's replacement singers are grown); the Waiting Room (a
+branch that is only a queue, and what happens if you skip it).
 
 ## v1.0 — More world (long-term)
 

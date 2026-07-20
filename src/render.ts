@@ -199,6 +199,7 @@ export class Renderer {
           case T.BranchDown: feat('portal', '#dcbe6e', 12); break;
           case T.PortalBack: feat('portal', '#8a6cf0', 12); break;
           case T.Merchant: feat('humanoid', '#dcbe6e', 10); break;
+          case T.WarpAltar: feat('altar', '#8ad45a', 14); break;
         }
 
         // lighting overlay
@@ -243,7 +244,7 @@ export class Renderer {
     }
 
     // -------- monsters
-    const senseAll = g.player.equip.amulet?.id === 'whispers';
+    const senseAll = g.player.equip.amulet?.id === 'whispers' || g.player.corruptions?.includes('hollowedeye');
     for (const m of g.monsters) {
       const i = idx(m.x, m.y, L.w);
       const vis = L.visible[i] === 1;
@@ -520,6 +521,7 @@ export class Renderer {
         if (t === T.Altar) c = '#b08ae8';
         if (t === T.BranchDown) c = '#dcbe6e';
         if (t === T.Merchant) c = '#ffd700';
+        if (t === T.WarpAltar) c = '#8ad45a';
         if (t === T.PortalBack) c = '#a88cf0';
         ctx.fillStyle = c;
         ctx.fillRect(ox + x * s, oy + y * s, Math.max(1, s), Math.max(1, s));

@@ -5,12 +5,13 @@ import {
 } from './data';
 import { itemSprite, monsterSprite as monsterSpriteName, playerDollURL, spriteURL } from './sprites';
 import { CHRONICLE, EGO_LORE, GOD_LORE, ITEM_LORE, MONSTER_LORE, MONSTER_LORE2, RACE_LORE, CLASS_LORE, UNIQUE_LORE } from './lore';
+import { CORRUPTIONS } from './data';
 import { MONSTERS, MONSTER_BY_ID } from './data';
 import { C, Game } from './game';
 import { sfx } from './audio';
 import type { Renderer } from './render';
 
-type Mode = 'title' | 'race' | 'class' | 'name' | 'play' | 'inv' | 'help' | 'target' | 'dead' | 'win' | 'examine' | 'codex' | 'hall' | 'shop';
+type Mode = 'title' | 'race' | 'class' | 'name' | 'play' | 'inv' | 'help' | 'target' | 'dead' | 'win' | 'examine' | 'codex' | 'hall' | 'shop' | 'corrupt';
 
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
 
@@ -63,8 +64,7 @@ export class UI {
     const hint = hasSave
       ? `<span class="key">Enter</span> continue your descent &nbsp;·&nbsp; <span class="key">n</span> new &nbsp;·&nbsp; <span class="key">h</span> hall of fame`
       : `<span class="key">Enter</span> to descend &nbsp;·&nbsp; <span class="key">h</span> hall of fame`;
-    const arts = ['title.png', 'title2.png', 'title3.png', 'title4.png', 'title5.png',
-      'title6.png', 'title7.png', 'title8.png', 'title9.png', 'title10.png'];
+    const arts = ['title.png', ...Array.from({ length: 19 }, (_, i) => `title${i + 2}.png`)];
     const art = arts[Math.floor(Math.random() * arts.length)];
     this.show(`
       <div class="title-hero" style="background-image:
@@ -148,6 +148,55 @@ export class UI {
     this.mode = 'play';
     this.hide();
     this.refreshHud();
+  }
+
+  showCorruption(): void {
+    this.mode = 'corrupt';
+    const g = this.game;
+    const offer = g.corruptionOffer ?? [];
+    const cards = offer.map((id, i) => {
+      const c = CORRUPTIONS.find((x) => x.id === id)!;
+      return `<div class="card" data-c="${id}">
+        <b><span class="key">${'ab'[i]}</span>${c.name}</b>
+        <small style="color:#8fce8f">${c.gain}</small>
+        <small style="color:#d08585">${c.cost}</small>
+        <div class="mods" style="font-style:italic">${c.lore}</div>
+      </div>`;
+    }).join('');
+    this.show(`
+      <div class="panel" style="max-width:640px;">
+        <h2 style="color:#8ad45a">The Altar With No Name</h2>
+        <p class="flavor">It does not want worship. It wants revisions. Choose what is rewritten — or refuse, and be remembered as unedited.</p>
+        <div class="cards" style="grid-template-columns:1fr">${cards}</div>
+        <p class="hint"><span class="key">a/b</span> accept an edit · <span class="key">Esc</span> refuse (the altar is spent either way)</p>
+      </div>`);
+    this.overlay.querySelectorAll('[data-c]').forEach((el) => {
+      el.addEventListener('click', () => {
+        this.mode = 'play';
+        this.hide();
+        this.game.acceptCorruption((el as HTMLElement).dataset.c!);
+        this.refreshHud();
+      });
+    });
+  }
+
+  corruptKey(k: string): void {
+    const g = this.game;
+    const offer = g.corruptionOffer ?? [];
+    if (k === 'Escape') {
+      this.mode = 'play';
+      this.hide();
+      g.acceptCorruption(null);
+      this.refreshHud();
+      return;
+    }
+    const i = 'ab'.indexOf(k);
+    if (i >= 0 && offer[i]) {
+      this.mode = 'play';
+      this.hide();
+      g.acceptCorruption(offer[i]);
+      this.refreshHud();
+    }
   }
 
   showShop(): void {
@@ -516,10 +565,15 @@ export class UI {
     } else {
       const r = RACES.find((x) => x.id === g.player?.raceId);
       const c = CLASSES.find((x) => x.id === g.player?.classId);
+      const corrs = (g.player?.corruptions ?? []).map((id) => {
+        const cd = CORRUPTIONS.find((x) => x.id === id)!;
+        return `<h3 style="margin-top:14px;color:#8ad45a">${cd.name}</h3><p>${cd.gain} ${cd.cost}.</p><p class="ex-lore">${cd.lore}</p>`;
+      }).join('');
       body = `
         <div class="cx-detail">
           ${r ? `<h3>${r.name}</h3><p>${r.desc}</p>${RACE_LORE[r.id] ? `<p class="ex-lore">${RACE_LORE[r.id]}</p>` : ''}` : ''}
           ${c ? `<h3 style="margin-top:14px">${c.name}</h3><p>${c.desc}</p>${CLASS_LORE[c.id] ? `<p class="ex-lore">${CLASS_LORE[c.id]}</p>` : ''}` : ''}
+          ${corrs}
         </div>`;
     }
     this.show(`
@@ -796,6 +850,8 @@ export class UI {
       }
       case 13: // PortalBack
         return `<h3>Portal home</h3><p>Press <span class="key">></span> to return to the great descent.</p>`;
+      case 15: // WarpAltar
+        return `<h3>A warped altar</h3><p>It bears no god\u2019s mark. <span class="key">p</span>ray on it to hear its offer: a permanent edit to what you are — a gift and a cost, both irreversible.</p><p class="ex-fla">The Cartographer\u2019s note: "Whoever tends these does not sign their work. Note the handwriting anyway."</p>`;
       case 14: // Merchant
         return `<h3>The Gravemerchant</h3><p>Walk into him to trade. Gold accepted; questions discouraged.</p><p class="ex-fla">Nobody knows how he gets below faster than the delvers do. Nobody has ever seen him arrive, or leave, or blink.</p>`;
       default:
@@ -937,6 +993,9 @@ export class UI {
         return;
       case 'shop':
         this.shopKey(k);
+        return;
+      case 'corrupt':
+        this.corruptKey(k);
         return;
       case 'play':
         this.playKey(k, e);
@@ -1091,6 +1150,10 @@ export class UI {
       this.showShop();
       return;
     }
+    if (g.corruptionOffer) {
+      this.showCorruption();
+      return;
+    }
     if (g.over === 'dead') setTimeout(() => this.showDeath(), 900);
     if (g.over === 'win') setTimeout(() => this.showWin(), 1200);
     this.refreshHud();
@@ -1105,7 +1168,10 @@ export class UI {
     const god = p.godId ? GODS.find((x) => x.id === p.godId)! : null;
     const bar = (cls: string, cur: number, max: number, label: string): string =>
       `<div class="bar ${cls}"><i style="transform:scaleX(${Math.max(0, Math.min(1, cur / Math.max(1, max)))})"></i><b>${label}</b></div>`;
-    const statuses = p.statuses.map((st) =>
+    const corrBadge = p.corruptions?.length
+      ? `<span style="border-color:#3a5230;color:#8ad45a">edited ×${p.corruptions.length}</span>`
+      : '';
+    const statuses = corrBadge + p.statuses.map((st) =>
       `<span>${st.kind}${st.kind === 'shield' ? ` ${st.power}` : ''} · ${st.turns}</span>`).join('');
     const abilities = g.abilitySlots().map((a, i) => {
       const locked = a.source === 'class' ? p.level < a.ab.unlock : p.piety < a.ab.unlock;

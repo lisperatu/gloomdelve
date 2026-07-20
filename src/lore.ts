@@ -22,7 +22,7 @@
 export interface ChronicleEntry {
   id: string;
   title: string;
-  unlock: { kind: 'start' | 'stratum' | 'boss' | 'god' | 'death' | 'win'; key?: string | number };
+  unlock: { kind: 'start' | 'stratum' | 'boss' | 'god' | 'death' | 'win' | 'corrupt'; key?: string | number };
   text: string;
 }
 
@@ -30,55 +30,55 @@ export interface ChronicleEntry {
 export const CHRONICLE: ChronicleEntry[] = [
   {
     id: 'evening', title: 'I. The Long Evening', unlock: { kind: 'start' },
-    text: 'No one alive remembers noon. The sun has hung at the lip of the horizon for nine generations, neither setting nor rising, like a coin balanced on its edge. The priests called it a trial. The scholars called it a wobble. The Cartographer, whose notes you carry, called it what it is: a wound. Something was taken out of the sky, and the sky has been bleeding out ever since. It was not taken up. Everything stolen from the world is taken down.',
+    text: 'No one alive remembers noon. The sun has hung at the lip of the horizon for nine generations, neither setting nor rising, like a coin balanced on its edge. The priests called it a trial. The scholars called it a wobble. The Cartographer, whose notes you carry, called it what it is: a wound. Something was taken out of the sky, and the sky has been bleeding out ever since. Nine surveys of the horizon exist, one per generation, and no two of them agree on where the horizon is. The instruments were checked. The instruments are fine. It was not taken up — the notes are firm on this, and the firmness reads like fear. Everything stolen from the world is taken down.',
   },
   {
     id: 'catacombs', title: 'II. The Processions', unlock: { kind: 'stratum', key: 0 },
-    text: 'You are not the first. The Mossgrave Catacombs are not a cemetery — they are a queue. Nine generations of delvers went down to take back what was stolen, and the dungeon filed them where they fell. The dead here still face downward, even the ones on their backs. Note, in the Cartographer\'s hand: "The rats are fat and the wights wear crowns of barrow-gold. Everyone who failed brought something worth stealing. Remember that you did too."',
+    text: 'You are not the first. The Mossgrave Catacombs are not a cemetery — they are a queue. Nine generations of delvers went down to take back what was stolen, and the dungeon filed them where they fell. The dead here still face downward, even the ones on their backs, and the oldest graves lie deepest though no hand has ever moved them: the queue is still, very slowly, advancing. The Chronicle does not say toward what window. Note, in the Cartographer\'s hand: "The rats are fat and the wights wear crowns of barrow-gold. Everyone who failed brought something worth stealing. Remember that you did too."',
   },
   {
     id: 'weald', title: 'III. What Grief Grows', unlock: { kind: 'stratum', key: 1 },
-    text: 'The Fungal Weald has no seeds and no sun, and yet it grows. The Cartographer\'s theory, underlined twice: mourning is a nutrient. Every tear shed in the Long Evening drains through the earth, and this is where it pools — a forest of pale flesh feeding on a world\'s worth of missing. The Weald does not hate you. It simply considers you a rich source of what it eats, because no one comes down here who has not lost something.',
+    text: 'The Fungal Weald has no seeds and no sun, and yet it grows. The Cartographer\'s theory, underlined twice: mourning is a nutrient. Every tear shed in the Long Evening drains through the earth, and this is where it pools — a forest of pale flesh feeding on a world\'s worth of missing. The Weald does not hate you; the Cartographer dissected widely and found no organ for it. It simply considers you a rich source of what it eats, because no one comes down here who has not lost something — and it can smell what, and how much, and, this being the underlined part, how much you have left.',
   },
   {
     id: 'cloister', title: 'IV. The Choir That Would Not Stop', unlock: { kind: 'stratum', key: 2 },
-    text: 'The Drowned Cloister was built by the Church of the Returning Sun, who believed the stolen light could be sung back into the sky if the hymn never once broke. They sang in shifts for sixty years. When the water came — and the water was not an accident — they made a decision that still echoes: they kept singing. The Chronicle records no order to stop. Beneath the black water, none has ever been given.',
+    text: 'The Drowned Cloister was built by the Church of the Returning Sun, who believed the stolen light could be sung back into the sky if the hymn never once broke. They sang in shifts for sixty years. When the water came — and the water was not an accident — they made a decision that still echoes: they kept singing. The Chronicle records no order to stop. Beneath the black water, none has ever been given. One measurement appears in the Cartographer\'s notes, crossed out and retaken and crossed out again: from above, the nave sounds at forty feet. No diver sent down to touch the floor has ever reported reaching it.',
   },
   {
     id: 'fathoms', title: 'V. The Forgery', unlock: { kind: 'stratum', key: 3 },
-    text: 'When singing failed, the Guild of the Second Dawn tried honesty: if the sun cannot be retrieved, build another. The Ember Fathoms are their foundry, sunk deep to hide the heat. The Chronicle is precise about the result. The forge-fires took, the mold held, and for one hour something rose over the anvils that cast true shadows. Then it went out — inward, the way a swallowed thing goes — and what crawls the Fathoms now are the parts of it that refused to cool.',
+    text: 'When singing failed, the Guild of the Second Dawn tried honesty: if the sun cannot be retrieved, build another. The Ember Fathoms are their foundry, sunk deep to hide the heat. The Chronicle is precise about the result. The forge-fires took, the mold held, and for one hour something rose over the anvils that cast true shadows. Then it went out — inward, the way a swallowed thing goes — and what crawls the Fathoms now are the parts of it that refused to cool. The shadows of that one hour are still on the workshop walls, still crisp, still faithfully tracking the position of a light that is no longer anywhere.',
   },
   {
     id: 'throne', title: 'VI. The Inversion', unlock: { kind: 'stratum', key: 4 },
-    text: 'Here is the theft, seated. The First Light was not destroyed and not hidden: it was turned inside out, and what radiates from the throne is everything a sun is when you subtract the giving. The Cartographer\'s last legible page: "It still WANTS to shine. That is the horror of it. Light bent into a shape that can only take. If you stand before it, understand — you are not fighting a darkness. You are fighting a dawn that was taught to hoard."',
+    text: 'Here is the theft, seated. The First Light was not destroyed and not hidden: it was turned inside out, and what radiates from the throne is everything a sun is when you subtract the giving. The Cartographer\'s last legible page: "It still WANTS to shine. That is the horror of it. Light bent into a shape that can only take. If you stand before it, understand — you are not fighting a darkness. You are fighting a dawn that was taught to hoard. It will not hate you. A sun does not hate what stands in its light. It will simply begin, very gently, to count you among its holdings."',
   },
   {
     id: 'shepherd', title: 'The Shepherd of the Filed Dead', unlock: { kind: 'boss', key: 'ossuaryshepherd' },
-    text: 'The first delvers were buried with honors. By the third generation there were too many, and something in the catacombs volunteered to keep order. The Ossuary Shepherd was a gravedigger once — the best of them, the one who dug for forty years and never once went down a hole himself. The dungeon made him a deal it makes to very few: stay, and keep the flock. He has kept it beautifully. He is so proud of the rows.',
+    text: 'The first delvers were buried with honors. By the third generation there were too many, and something in the catacombs volunteered to keep order. The Ossuary Shepherd was a gravedigger once — the best of them, the one who dug for forty years and never once went down a hole himself. The dungeon made him a deal it makes to very few: stay, and keep the flock. He has kept it beautifully. He is so proud of the rows. The Cartographer, out of professional habit, surveyed them: every row is perfectly straight, and every row, extended on paper, converges on a single point some floors below the deepest floor of any map.',
   },
   {
     id: 'tyrant', title: 'The One Flesh of the Weald', unlock: { kind: 'boss', key: 'mycelialtyrant' },
-    text: 'Every mushroom in the Weald is a knuckle of a single buried hand. The Mycelial Tyrant is not its king — kings can be replaced. It is the Weald\'s decision to have a fist. The Cartographer fed it three torchbearers and a mule to learn one fact: it bleeds the same sap that seeps from the Catacomb walls. The grief that grows the Weald comes from above. Whatever waters it, waters it through the graves.',
+    text: 'Every mushroom in the Weald is a knuckle of a single buried hand. The Mycelial Tyrant is not its king — kings can be replaced. It is the Weald\'s decision to have a fist. The Cartographer fed it three torchbearers and a mule to learn one fact: it bleeds the same sap that seeps from the Catacomb walls. The grief that grows the Weald comes from above. Whatever waters it, waters it through the graves. A question in the margin, never answered and never repeated: gardens imply a gardener.',
   },
   {
     id: 'cardinal', title: 'The Baptism of the Deep', unlock: { kind: 'boss', key: 'drownedcardinal' },
-    text: 'When the water rose in the Cloister, Cardinal Vesse made the hymn mandatory. He walked the flooding aisles baptizing his choir into the deep one by one, holding each under with his own hands so the song would continue below. The Chronicle preserves his arithmetic: a drowned voice never tires, never doubts, never stops. He was correct. The hymn has not broken in three hundred years. This is what it costs to be correct.',
+    text: 'When the water rose in the Cloister, Cardinal Vesse made the hymn mandatory. He walked the flooding aisles baptizing his choir into the deep one by one, holding each under with his own hands so the song would continue below. The Chronicle preserves his arithmetic: a drowned voice never tires, never doubts, never stops. He was correct. The hymn has not broken in three hundred years. This is what it costs to be correct. The Chronicle\'s copyist adds one figure without comment: of the hundred and nine he baptized, only the first nine struggled. The rest had by then heard what sings back from under the water, and went under reaching.',
   },
   {
     id: 'kiln', title: 'The Apprentice at the Bellows', unlock: { kind: 'boss', key: 'kilntyrant' },
-    text: 'The Guild\'s false sun did not simply fail — it was sabotaged from inside the workshop. The Kiln Tyrant was the forgemaster\'s apprentice, left to mind the bellows on the last night, and something came up through the fire and spoke to it in the language of heat. What it was offered, the Chronicle does not record. What it did is the Fathoms themselves: it opened the mold an hour early, and it has been trying to finish the sun in its own image ever since.',
+    text: 'The Guild\'s false sun did not simply fail — it was sabotaged from inside the workshop. The Kiln Tyrant was the forgemaster\'s apprentice, left to mind the bellows on the last night, and something came up through the fire and spoke to it in the language of heat. What it was offered, the Chronicle does not record. What it did is the Fathoms themselves: it opened the mold an hour early, and it has been trying to finish the sun in its own image ever since. The workshop clocks were found stopped at nine different hours, each claiming to be the hour it happened. The Chronicle keeps all nine, being unable to prove any of them wrong.',
   },
   {
     id: 'bride', title: 'The Wedding Below', unlock: { kind: 'boss', key: 'charnelbride' },
-    text: 'She came down in the second generation, in a procession of forty, to marry her betrothed who had fallen the year before — a rite the mountain villages practiced when the Evening began, to keep the dead from feeling abandoned. The dungeon attended the ceremony. It was, by the only surviving account, deeply moved. It granted her what it considered the obvious gift: that the marriage never end. She has curated the Ossuary ever since, filing every delver like a wedding guest, and her veil grows one thread longer with each.',
+    text: 'She came down in the second generation, in a procession of forty, to marry her betrothed who had fallen the year before — a rite the mountain villages practiced when the Evening began, to keep the dead from feeling abandoned. The dungeon attended the ceremony. It was, by the only surviving account, deeply moved. It granted her what it considered the obvious gift: that the marriage never end. She has curated the Ossuary ever since, filing every delver like a wedding guest, and her veil grows one thread longer with each. The account of the ceremony survives because the dungeon preserved it — the only document it is known to keep. The Chronicle notes this the way one notes a predator keeping a keepsake.',
   },
   {
     id: 'mother', title: 'The Larder', unlock: { kind: 'boss', key: 'mothersilk' },
-    text: 'Mother-of-Silk is older than the theft — she was here when the First Light still hung in the sky, and she is one of the few things below that remembers it. She does not eat her wrapped delvers. She keeps them, the Cartographer insists, the way the rich keep pantries through a famine: not from hunger, from arithmetic. She has seen what the dark eats when it runs out of everything else, and she intends to be holding the last food in the world when it comes asking.',
+    text: 'Mother-of-Silk is older than the theft — she was here when the First Light still hung in the sky, and she is one of the few things below that remembers it. She does not eat her wrapped delvers. She keeps them, the Cartographer insists, the way the rich keep pantries through a famine: not from hunger, from arithmetic. She has seen what the dark eats when it runs out of everything else, and she intends to be holding the last food in the world when it comes asking. The Cartographer\'s note on meeting her gaze: "She looked at me the way we look at weather."',
   },
   {
     id: 'gaoler2', title: 'The Ledger of Chains', unlock: { kind: 'boss', key: 'gaoler' },
-    text: 'The Vault was not built to hold criminals. Read the cell doors: they lock from the outside AND the inside. When the Unlight took its throne, some of the things that had served the First Light could not bear to look at what it had become — and could not be trusted not to kneel to it either. They chose the chains. The Gaoler was their commander, and it holds the one post it could not assign: warden of the loyal. Its ledger records no releases because none of them has ever asked.',
+    text: 'The Vault was not built to hold criminals. Read the cell doors: they lock from the outside AND the inside. When the Unlight took its throne, some of the things that had served the First Light could not bear to look at what it had become — and could not be trusted not to kneel to it either. They chose the chains. The Gaoler was their commander, and it holds the one post it could not assign: warden of the loyal. Its ledger records no releases because none of them has ever asked. The ledger also carries columns with no headings, kept current in a careful hand. The Cartographer copied a single cell before the Gaoler turned around. It was a date. It has not happened yet.',
   },
   {
     id: 'vestal2', title: 'The Vigil of Tallow', unlock: { kind: 'boss', key: 'vestal' },
@@ -93,29 +93,33 @@ export const CHRONICLE: ChronicleEntry[] = [
     text: 'Mirrors below the world do not work the way they do above, because reflection requires light and the light down here has been inverted. What the Cistern\u2019s water shows is therefore not you — it is what the Unlight sees when it looks at you: the wanting, the hoarding, the version of you that descends for the crown and not the dawn. Every delver leaves one behind. The Pale Reflection is the anthology. The Chronicle\u2019s warning is underlined three times: it wears the faces of those who got furthest, and the reason it wears them is that the delvers who got furthest were the ones most like it.',
   },
   {
+    id: 'editor', title: 'The Nameless Editor', unlock: { kind: 'corrupt' },
+    text: 'The warped altars are catalogued in no scripture, and the six gods do not speak of them — not from ignorance, the Cartographer concluded, but the way one does not speak of a colleague under investigation. Whoever tends them works in revisions: a gland here, an eye there, always a fair trade, always a receipt. Consider what kind of power edits delvers stronger the deeper they go, as if preparing instruments. Consider that the theft of the sun was scheduled, that the Vault holds a reservation, and that somewhere below, someone has always known exactly what shape the descent requires you to be. The Chronicle does not say the Editor and the Accomplice are the same hand. The Chronicle notes only that neither has ever signed anything.',
+  },
+  {
     id: 'ledger', title: '✝ What the Ledger Keeps', unlock: { kind: 'death' },
-    text: 'The dungeon keeps a ledger of every delver it has ended, and the entries do not stop at the name. It records what you knew. This is why the Codex survives you when your body does not — knowledge is the one coin the dark cannot confiscate, and every delver who reads these notes inherits every delver who wrote in them. The Cartographer\'s hand, on the inside cover: "Die well. Write it down first."',
+    text: 'The dungeon keeps a ledger of every delver it has ended, and the entries do not stop at the name. It records what you knew. It records, in a second column, what you were about to know — the Cartographer found his own entry while still alive, already ruled, already half-filled, and confirms that the handwriting was his. This is why the Codex survives you when your body does not — knowledge is the one coin the dark cannot confiscate, and every delver who reads these notes inherits every delver who wrote in them. The Cartographer\'s hand, on the inside cover: "Die well. Write it down first."',
   },
   {
     id: 'dawn', title: 'VII. Dawn, Reassembled', unlock: { kind: 'win' },
-    text: 'The Chronicle\'s final page was blank for nine generations. It reads, now: The crown came off. What was hoarded, spilled. Light does not hold a grudge — that is the entire difference between it and everything else in the deep — and it rose through twenty floors of grave-earth like water remembering it can be rain. Above, on the horizon, the coin tips. The queue in the catacombs can stop forming. The hymn, at very long last, is permitted to end.',
+    text: 'The Chronicle\'s final page was blank for nine generations. It reads, now: The crown came off. What was hoarded, spilled. Light does not hold a grudge — that is the entire difference between it and everything else in the deep — and it rose through twenty floors of grave-earth like water remembering it can be rain. Above, on the horizon, the coin tips. The queue in the catacombs can stop forming. The hymn, at very long last, is permitted to end. One page after this one is blank, and the Chronicle keeps it blank, in the way a court keeps a warrant open. The theft was scheduled, and schedules have authors. The light is home. The ink is waiting.',
   },
 ];
 
 // ============================================================ gods
 export const GOD_LORE: Record<string, string> = {
-  silentking: 'He was the First Light\'s shadow — cast for an eternity, then suddenly cast off. He does not want the light back; a shadow freed of its caster answers to no one. He gathers the dead because they are the only things that fall to him naturally now, and he is patient because he won either way: every candle in the world will come to him eventually, one flicker at a time. The Cartographer notes his single mercy — he genuinely does refuse deaths he considers "badly written."',
-  moths: 'When the Light was dragged below, everything that loved it had to choose: mourn or follow. The moths followed — all of them, a river of wings pouring into the earth — and something in the dark, amused or moved, crowned the current. She is the patron of everyone who descends toward what they love knowing it will burn them. Her luck is real, and it is not luck: it is a thousand small wings, nudging.',
-  rottingchoir: 'Not one god — a congregation. They were the Cloister\'s first choir, the generation that drowned, and in the deep their hymn fermented into something else: a harmony of decomposition, every voice a different stage of rot singing the same note. They love poison because poison is patient music, a song that keeps performing in the body after the singer leaves. Join them and you will notice, on quiet floors, that you are humming something you never learned.',
-  blacksun: 'The Guild\'s false sun did not entirely die. The hour it burned was enough for it to be worshipped — heat makes converts fast — and a thing worshipped even once does not fully go out. The Black Sun is that hour, remembered so hard it stayed. It radiates the inverse of its maker\'s intent: not light for everyone, but fire for its own. It asks its followers to burn things because every burning is a small vote that it existed.',
-  drowned: 'The water that took the Cloister was not sent by the Unlight, whatever the priests say. It rose on its own — the deep\'s oldest tenant, older than light and unbothered by its theft. The Drowned One considers the entire war over the sky to be a squabble between newcomers. It rewards kills made in its element for the simplest of reasons: it likes to watch things learn, at the end, that the tide was always the landlord.',
+  silentking: 'He was the First Light\'s shadow — cast for an eternity, then suddenly cast off. He does not want the light back; a shadow freed of its caster answers to no one. He gathers the dead because they are the only things that fall to him naturally now, and he is patient because he won either way: every candle in the world will come to him eventually, one flicker at a time. The Cartographer notes his single mercy — he genuinely does refuse deaths he considers "badly written." The refused wake at the foot of their own graves with the particular feeling of a manuscript handed back.',
+  moths: 'When the Light was dragged below, everything that loved it had to choose: mourn or follow. The moths followed — all of them, a river of wings pouring into the earth — and something in the dark, amused or moved, crowned the current. She is the patron of everyone who descends toward what they love knowing it will burn them. Her luck is real, and it is not luck: it is a thousand small wings, nudging. Ask toward what, and every account agrees on the answer: closer.',
+  rottingchoir: 'Not one god — a congregation. They were the Cloister\'s first choir, the generation that drowned, and in the deep their hymn fermented into something else: a harmony of decomposition, every voice a different stage of rot singing the same note. They love poison because poison is patient music, a song that keeps performing in the body after the singer leaves. Join them and you will notice, on quiet floors, that you are humming something you never learned. You will notice, somewhat later, that you cannot remember starting.',
+  blacksun: 'The Guild\'s false sun did not entirely die. The hour it burned was enough for it to be worshipped — heat makes converts fast — and a thing worshipped even once does not fully go out. The Black Sun is that hour, remembered so hard it stayed. It radiates the inverse of its maker\'s intent: not light for everyone, but fire for its own. It asks its followers to burn things because every burning is a small vote that it existed. It counts the votes. It is not yet a majority.',
+  drowned: 'The water that took the Cloister was not sent by the Unlight, whatever the priests say. It rose on its own — the deep\'s oldest tenant, older than light and unbothered by its theft. The Drowned One considers the entire war over the sky to be a squabble between newcomers. It rewards kills made in its element for the simplest of reasons: it likes to watch things learn, at the end, that the tide was always the landlord. Prayers to it do not rise. They sink, and the answers come back up slower and colder, and not always to the one who asked.',
   warden: 'Every god below is something the theft broke. The Nameless Warden is what the theft could not break: the bare act of standing between a blow and someone behind you. It has no temples because it does not stay anywhere long enough; it is worshipped exclusively in the moment of impact. The Cartographer\'s note is uncharacteristically warm: "Of all of them, only the Warden never asked me for anything. It only ever asked the blow."',
 };
 
 // ============================================================ bestiary — tier 1 (unlocked on sight)
 export const MONSTER_LORE: Record<string, string> = {
   graverat: 'The catacomb rats are fat because grave-offerings are edible and grief is regular. The Cartographer\'s tally-mark method for estimating a floor\'s body count: count the rats, multiply by what they weigh.',
-  shambler: 'The buried delvers do not rise on their own — the moss grows through them first, and the moss remembers walking. What shambles is a collaboration.',
+  shambler: 'The buried delvers do not rise on their own — the moss grows through them first, and the moss remembers walking. What shambles is a collaboration. Neither party is the one that weeps.',
   skelhound: 'Delvers brought dogs, the first few generations. The dogs kept the vigil their owners could not. Some are still waiting at the specific graves.',
   tombspider: 'It webs the mouths of the dead. The Cartographer never established what it was keeping in, and stopped wanting to know.',
   gloombat: 'They roost in the throats of the ventilation shafts, which means they have tasted surface air more recently than any delver. They screech in the old daylight tongue.',
@@ -126,7 +130,7 @@ export const MONSTER_LORE: Record<string, string> = {
   myconid: 'It dreams standing up, and what it dreams leaks: sleep near one and you will dream of a sky you have never seen, hanging at evening.',
   sporehulk: 'A walking hillside. The Weald uses them to relocate itself, acre by patient acre, always downward. Ask why a forest is migrating toward the throne.',
   caveleech: 'It prefers the blood of the recently bereaved — richer, the Cartographer supposes, in what the Weald farms.',
-  fungalzombie: 'The Weald\'s politest arrangement: the corpse gets to keep walking, the fungus gets the itinerary.',
+  fungalzombie: 'The Weald\'s politest arrangement: the corpse gets to keep walking, the fungus gets the itinerary. All the itineraries end at the same place.',
   glowmoth: 'Descendants of the river of wings that followed the Light down. They still navigate by a sun that is no longer in the sky, which is why they circle.',
   venomcrawler: 'Its venom is refined grief — the Weald\'s cash crop. A drop on the tongue, one survivor reported, tastes like the day the Evening began.',
   sporecaller: 'The Weald\'s clergy, insofar as a single organism needs clergy. It does not summon reinforcements; it reminds the floor that it is all one thing.',
@@ -144,7 +148,7 @@ export const MONSTER_LORE: Record<string, string> = {
   magmacrawler: 'It swims the stone because, to it, the stone is still molten — it simply refuses to acknowledge nine generations of cooling. The Fathoms respect commitment.',
   ashrevenant: 'When the false sun went out, its light had already left the workshop — and light, once emitted, must go somewhere. The revenants are the emissions, come home angry.',
   embercultist: 'The Guild\'s heirs, doctrinally split from the Black Sun\'s church over one word: whether the fire is to be FED or FINISHED. They pray with lit matches for tongues either way.',
-  pyrehound: 'The Guild bred hounds to walk the forge floors and fetch dropped tools from the coals. The breed outlived the Guild. It still fetches.',
+  pyrehound: 'The Guild bred hounds to walk the forge floors and fetch dropped tools from the coals. The breed outlived the Guild. It still fetches, and it has begun bringing back tools nobody dropped.',
   obsidiangolem: 'Forge-slag from the sabotage night, load-bearing and unforgiving. Each one contains, at its core, a tool the apprentice was holding when it said yes.',
   flamedjinn: 'It came up through the fire on the last night and spoke to the apprentice. It grants one wish per delver, always the same one, always by incineration — its position being that everyone, deep down, wishes to be light.',
   kilntyrant: 'The apprentice, still at the bellows, still finishing the work in its own image.',
@@ -188,7 +192,7 @@ export const MONSTER_LORE2: Record<string, string> = {
   mycelialtyrant: 'Cut it open and the sap runs UP, against gravity, back toward the graves it drains. The Weald is not feeding on the world\'s grief for sustenance. It is stockpiling it. Grief, concentrated, is the one thing the Unlight cannot metabolize — the Weald is building a poison, and it is nearly done.',
   choirwraith: 'Silence one and the hymn does not lose a voice — the remaining wraiths redistribute the phrase within the hour, like a load-bearing wall sharing weight. The Cartographer\'s conclusion, boxed for emphasis: the hymn is not a performance. It is a structure. Something is being held up by it, or held down.',
   drownedcardinal: 'His hands, when he finally dies, do not stop. They continue the baptismal motion, empty, patient. The Chronicle\'s appendix records what Vesse never told his choir: the water offered him terms on the first night, and the hymn\'s true purpose since has been to drown OUT its voice, not to reach the sky. He kept them singing so they could not hear it.',
-  kilntyrant: 'Slain, it does not cool for nine days — and on the ninth, its chest-furnace is found empty. Whatever the djinn offered it on the last night, it was not power. It was custody. The unfinished false sun has been inside the apprentice all along, and killing the Tyrant does not extinguish the prototype. It releases it to find a new smith.',
+  kilntyrant: 'Slain, it does not cool for nine days — and on the ninth, its chest-furnace is found empty. Whatever the djinn offered it on the last night, it was not power. It was custody. The unfinished false sun has been inside the apprentice all along, and killing the Tyrant does not extinguish the prototype. It releases it to find a new smith. The Chronicle\'s advice is for once practical: when it falls, be holding nothing that could be called a hammer.',
   flamedjinn: 'Every djinn you kill dies mid-sentence, and delvers who compare notes find the sentences continue each other. The Cartographer assembled forty-one fragments. They spell an apology — addressed not to the Guild, and not to the apprentice, but to the mold.',
   sovereign: 'The Chronicle\'s appendix, in a hand that is not the Cartographer\'s: it did not steal itself. Light cannot fall below the horizon uninvited. Somebody, in the noon of the world, looked at a sun that gave to everyone equally and concluded it was being wasted. The Sovereign is the crime. The accomplice was never caught. The queue in the catacombs, nine generations long, includes every detective who got close.',
   charnelbride: 'Her veil, unwound, is a guest list — every delver she has filed, stitched in hair-fine bone thread, in order of arrival. The forty-first entry is circled. The Cartographer never explained the circle, and the Cartographer was the forty-first thing she filed.',
@@ -212,14 +216,14 @@ export const ITEM_LORE: Record<string, string> = {
   'amulet:leech': 'Cloister reliquary work: it holds a leech-saint\'s tooth. The blows you land tithe to you now. The saint takes a cut.',
   'amulet:clarity': 'Forged in the Vault of Chains for interrogators, so the prisoners\' sentences could not slow their pens. It keeps your mind your own, which below is a controlled substance.',
   'amulet:graveheart': 'A heart of grave-soil, still beating on momentum. The vigor is real. So is the weight.',
-  'amulet:whispers': 'The dark, it turns out, gossips. This amulet is simply a very good listener with no discretion whatsoever.',
+  'amulet:whispers': 'The dark, it turns out, gossips. This amulet is simply a very good listener with no discretion whatsoever. Some of what it repeats has not been said yet.',
   'potion:ichor': 'Bottled by someone who believed everything below is medicine if you are brave enough. The Cartographer\'s label, added later: "It is not."',
   'scroll:immolation': 'Guild disposal doctrine, single page. The Cartographer\'s note: "Read it angry, and stand in the middle of your problems first."',
 };
 
 export const UNIQUE_LORE: Record<string, string> = {
   'Vigil': 'The Vestal\u2019s first spear, planted at the chapel door the night she lit the first candle. It burns because some promises soak in.',
-  'The Cartographer’s Pick': 'The tool that mapped every floor you have walked. It cuts rock, bone, and — its maker noted in the margin — excuses.',
+  'The Cartographer’s Pick': 'The tool that mapped every floor you have walked. It cuts rock, bone, and — its maker noted in the margin — excuses. The grip is worn to the shape of a hand that is not yours, and does not stay the same size.',
   'Choirmail': 'Woven from the bell-silver of the Cloister before it drowned. It rings very softly when struck, one note, always the same. Singers recognize it.',
   'The Long Evening': 'A bow strung with the horizon itself, or so the Guild claimed when they sold it. Every arrow it looses arrives a little colder than it left.',
   'Barrowband': 'Wight-gold, freely given — the only crown in the catacombs that ever came off willingly. Its previous owner asked one thing: spend the fury well.',
@@ -229,7 +233,7 @@ export const UNIQUE_LORE: Record<string, string> = {
 export const EGO_LORE: Record<string, string> = {
   flaming: 'Quenched in the Fathoms on the night the false sun burned. One hour of dawn is folded into the edge.',
   venom: 'Weald-tithed steel. It pays a percentage of every wound to the forest, in grief.',
-  draining: 'The Silent King\'s tax stamp is on the tang. What it takes from them was always, in his accounting, owed.',
+  draining: 'The Silent King\'s tax stamp is on the tang. What it takes from them was always, in his accounting, owed. What it takes from you is billed later.',
   frost: 'The grave-wind blows from a door that has never been found. This blade was left in front of it overnight.',
   vorpal: 'Sharpened past sharpness into policy: whatever it touches has, on some level, already agreed to be cut.',
   shadows: 'Woven with thread from the loose shadows — the deniable ones. It extends their arrangement to you.',
@@ -242,7 +246,7 @@ export const EGO_LORE: Record<string, string> = {
 // ============================================================ races & classes
 export const RACE_LORE: Record<string, string> = {
   hollowed: 'The Hollowed climb out of the catacomb queue — the only delvers who enter the dungeon by leaving one of its graves. The Shepherd regards them as escaped inventory. They regard the Shepherd as an unpaid debt.',
-  ashkin: 'Born in the one hour the false sun burned, to mothers who stood too close to the Fathoms\' vents. The fire that failed the world succeeded, in a small way, in them.',
+  ashkin: 'Born in the one hour the false sun burned, to mothers who stood too close to the Fathoms\' vents. The fire that failed the world succeeded, in a small way, in them. Their pulse, the Cartographer measured, keeps forge-time rather than heart-time.',
   vesperkin: 'They lived in the twilight belt before the Evening, and when the whole world became twilight they were suddenly, awkwardly, the natives. Their onyx eyes were made for exactly this.',
   graveelf: 'The elves buried their forests when the Light was taken — a forest cannot mourn on its feet — and followed them down to sit shiva. Nine generations later, they are still down here, and the sitting has become something sharper.',
   trollblood: 'The mountains\' answer to the question no one asked them. Trollblood delvers descend for the oldest reason: their ancestors\' peace with the dark included visiting rights.',
@@ -253,7 +257,7 @@ export const RACE_LORE: Record<string, string> = {
 export const CLASS_LORE: Record<string, string> = {
   gravewarden: 'The order that keeps the doors of the dead was founded after the first procession failed to stay buried. Their maces are consecrated for one argument and they have never lost it twice.',
   pyroclast: 'They swallow a coal from the Black Sun\'s altar as ordination. Most die. The rest are furnaces on a pilgrimage, looking for the original fire to give the coal back.',
-  shadowdancer: 'Their guild taught dancing, before the Evening. The dark simply turned out to be a better partner — it never leads, never tires, and never asks questions about the knife.',
+  shadowdancer: 'Their guild taught dancing, before the Evening. The dark simply turned out to be a better partner — it never leads, never tires, and never asks questions about the knife. The oldest dancers report that, in the long figures, it has lately begun to lead.',
   plaguewright: 'Physicians who kept asking why until the College expelled them into the deep, where the answers live. Their oath is intact, technically: first, do no harm — the order of operations is theirs to choose.',
   hexblade: 'A heretical sword-school whose founding insight was that every parry is a prayer and every prayer can be said backwards. The orthodox schools burned their monastery. The monastery, notably, parried.',
   bonecaster: 'Necromancy below is not forbidden — it is union labor. The Bonecasters hold the oldest contract in the dungeon: the dead work willingly, for the one employer who guarantees they will not be filed.',
@@ -268,8 +272,12 @@ export interface Whisper {
 // checked on arrival at each new spine depth; fired at most once per run each
 export const WHISPERS: Record<number, Whisper> = {
   2: { id: 'w2', text: 'Scratched beside the stairs, in the Cartographer\'s hand: "Still cheerful. Still stupid. Down we go."' },
+  4: { id: 'w4', text: 'The Cartographer\'s map of this floor disagrees with the floor. Beside it: "Paced it twice. Eighty-one paces down, seventy-nine back. The corridor keeps the difference."' },
   6: { id: 'w6', text: 'A tally on the wall: forty marks, then one more in different, shakier chalk.' },
+  8: { id: 'w8', text: 'A perfect circle of dead moths, wings down. The Cartographer\'s note reads, in full: "Do not stand in the centre. No reason recorded. None needed."' },
   11: { id: 'w11', text: 'The water here is warm, which the Cartographer\'s notes say to never think about.' },
+  13: { id: 'w13', text: 'A sounding-line hangs by the stairs, knotted at forty feet, wet to ninety. In the margin: "The Cloister is deeper from the inside. Most things down here are."' },
   16: { id: 'w16', text: 'From here down, your torch-shadows fall the wrong way — toward the light. They know who is in charge below.' },
+  17: { id: 'w17', text: 'The same words scratched over and over at the height of a resting hand: "the mold is a door." The scratches are in the Cartographer\'s hand. Below them, same hand: "I did not write this."' },
   19: { id: 'w19', text: 'The last note in the Cartographer\'s journal before the pages go strange: "If you are reading this on depth nineteen, I am two floors of paperwork below you. File me well."' },
 };

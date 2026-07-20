@@ -5,7 +5,7 @@ import {
   type Player, type Status, type StatusKind,
 } from './types';
 import {
-  ARMORS, BRANCH_BY_ID, BRANCH_PAIRS, CLASSES, GODS, MAX_DEPTH, MONSTER_BY_ID, RACES,
+  ARMORS, BRANCH_BY_ID, BRANCH_PAIRS, CLASSES, CORRUPTIONS, GODS, MAX_DEPTH, MONSTER_BY_ID, RACES,
   STRATA, WEAPONS, genItem, itemName, makeIdentify, mkItem, stratumFor,
   type AbilityDef, type ClassDef, type Identify, type RaceDef,
 } from './data';
@@ -47,6 +47,41 @@ export class Game {
   foundUniques = new Set<string>();
   merchantStock: Item[] | null = null; // per-level; null until visited
   shopOpen = false;
+  corruptionOffer: string[] | null = null; // two corruption ids, set when praying at a warped altar
+
+  hasCorr(id: string): boolean {
+    return this.player?.corruptions.includes(id) ?? false;
+  }
+
+  acceptCorruption(id: string | null): void {
+    const p = this.player;
+    this.corruptionOffer = null;
+    const here = idx(p.x, p.y, this.level.w);
+    if (this.tileAt(p.x, p.y) === T.WarpAltar) {
+      this.level.tiles[here] = T.Rubble; // the altar is spent either way
+    }
+    if (!id) {
+      this.msg('You refuse. The altar closes like an eye. Something makes a small note.', C.god);
+      this.advanceWorld();
+      return;
+    }
+    const def = CORRUPTIONS.find((c) => c.id === id);
+    if (!def) return;
+    p.corruptions.push(id);
+    switch (id) {
+      case 'venomglands': p.dex = Math.max(3, p.dex - 2); break;
+      case 'swallowedkey': p.str++; p.dex++; p.wil++; break;
+      default: break;
+    }
+    p.hp = Math.min(p.hp, this.maxHpTot());
+    sfx.play('god');
+    this.pushFx({ t: 'flash', color: '#8ad45a' });
+    this.msg(`The edit is made. You have gained: ${def.name}.`, C.god);
+    this.msg(`${def.lore}`, '#a89cc4');
+    if (p.corruptions.length === 1) this.chroniclePage();
+    this.dirty = true;
+    this.advanceWorld();
+  }
   hpAcc = 0;
   mpAcc = 0;
   dirty = true; // HUD refresh flag
@@ -199,6 +234,7 @@ export class Game {
       statuses: [], reprieveUsed: false, kills: 0, turns: 0,
       name: `${this.race.name.replace(/^The /, '')} ${this.cls.name}`,
       charName,
+      corruptions: [],
     };
     const kit = this.cls.kit;
     if (kit.weapon) {
@@ -371,6 +407,8 @@ export class Game {
     let hp = this.player.maxHp + this.ringBonus('vigor') * 12;
     if (this.hasAmulet('graveheart')) hp += 20;
     if (this.player.equip.body?.ego === 'vitality') hp += 15;
+    if (this.hasCorr('chainedheart')) hp = Math.round(hp * 1.25);
+    if (this.hasCorr('mothlung')) hp = Math.round(hp * 0.9);
     return hp;
   }
   maxMpTot(): number {
@@ -381,6 +419,7 @@ export class Game {
     let ac = b ? (ARMORS.find((a) => a.id === b.id)!.ac + b.plus + (b.ego === 'warding' ? 2 : 0)) : 0;
     ac += this.ringBonus('warding') * 3;
     if (this.hasStatus('stone')) ac += 4;
+    if (this.hasCorr('barkgraft')) ac += 3;
     return ac;
   }
   playerEV(): number {
@@ -391,6 +430,7 @@ export class Game {
     ev += this.ringBonus('shadows') * 3;
     if (this.hasStatus('veil')) ev += 4;
     if (this.hasAmulet('graveheart')) ev -= 1;
+    if (this.hasCorr('barkgraft')) ev -= 2;
     const here = this.level.tiles[idx(p.x, p.y, this.level.w)];
     if (here === T.Water) ev += this.race.waterborn ? 2 : -2;
     if (this.hasStatus('stun')) ev -= 5;
@@ -429,7 +469,7 @@ export class Game {
     return out;
   }
   playerPoisonImmune(): boolean {
-    return !!this.race.immunePoison || this.player.equip.body?.ego === 'mire';
+    return !!this.race.immunePoison || this.player.equip.body?.ego === 'mire' || this.hasCorr('mothlung');
   }
   spellPower(type?: DamageType): number {
     let m = 1 + Math.max(0, this.player.wil - 10) * 0.04;
@@ -439,6 +479,7 @@ export class Game {
   }
   stealthMult(): number {
     let m = this.race.stealth;
+    if (this.hasCorr('swallowedkey')) m *= 2;
     if (this.hasStatus('veil')) m *= 0.4;
     if (this.ringBonus('shadows') > 0) m *= 0.6;
     if (this.player.equip.body?.ego === 'shadows') m *= 0.7;
@@ -474,7 +515,7 @@ export class Game {
   updateFOV(): void {
     const L = this.level;
     L.visible.fill(0);
-    computeFOV(this.player.x, this.player.y, this.race.fov,
+    computeFOV(this.player.x, this.player.y, Math.max(4, this.race.fov - (this.hasCorr('hollowedeye') ? 2 : 0)),
       (x, y) => isTransparent(this.tileAt(x, y)),
       (x, y) => {
         if (x < 0 || y < 0 || x >= L.w || y >= L.h) return;
@@ -592,7 +633,7 @@ export class Game {
     for (const it of here) {
       this.items.splice(this.items.indexOf(it), 1);
       if (it.kind === 'gold') {
-        p.gold += it.qty;
+        p.gold += this.hasCorr('ledgerhand') ? Math.round(it.qty * 1.5) : it.qty;
         sfx.play('gold');
         this.msg(`You gather ${it.qty} gold.`, C.item);
         continue;
@@ -639,8 +680,20 @@ export class Game {
   pray(): void {
     const p = this.player;
     const i = idx(p.x, p.y, this.level.w);
-    if (this.tileAt(p.x, p.y) !== T.Altar) {
+    if (this.tileAt(p.x, p.y) !== T.Altar && this.tileAt(p.x, p.y) !== T.WarpAltar) {
       this.msg(p.godId ? 'You whisper a prayer. The depths do not answer.' : 'You need an altar to pledge yourself.', C.god);
+      return;
+    }
+    if (this.tileAt(p.x, p.y) === T.WarpAltar) {
+      const pool = CORRUPTIONS.filter((c) => !p.corruptions.includes(c.id));
+      if (!pool.length) {
+        this.msg('The altar regards you, finds no unedited page, and loses interest.', C.god);
+        return;
+      }
+      const picks = this.rng.shuffle(pool).slice(0, 2).map((c) => c.id);
+      this.corruptionOffer = picks;
+      this.msg('The altar bears no god\u2019s mark. It hums like held breath, and offers.', C.god);
+      this.dirty = true;
       return;
     }
     const god = GODS.find((g) => g.id === this.level.altarGod.get(i));
@@ -684,6 +737,7 @@ export class Game {
   gainPiety(n: number, note?: string): void {
     if (!this.player.godId) return;
     const before = this.player.piety;
+    if (this.hasCorr('ledgerhand')) n = Math.max(1, Math.floor(n / 2));
     this.player.piety = Math.min(200, this.player.piety + n);
     if (note) this.msg(note, C.god);
     const god = GODS.find((g) => g.id === this.player.godId)!;
@@ -736,6 +790,7 @@ export class Game {
       if (this.rng.chance(0.3)) this.addStatus(m, 'slow', 1, 4);
     }
     if (w?.ego === 'venom' && !m.def.resist?.includes('poison') && this.rng.chance(0.5)) this.addStatus(m, 'poison', 2, 5);
+    if (this.hasCorr('venomglands') && !m.def.resist?.includes('poison') && this.rng.chance(0.35)) this.addStatus(m, 'poison', 2, 5);
     if (w?.ego === 'draining' && m.hp > 0) {
       const heal = Math.max(1, Math.floor(dmg / 3));
       this.healPlayer(heal);
@@ -915,6 +970,7 @@ export class Game {
     let dmg = amount;
     if (type === 'poison' && this.playerPoisonImmune()) return;
     if (this.playerResists().includes(type)) dmg = Math.floor(dmg * 0.5);
+    if (type === 'fire' && this.hasCorr('barkgraft')) dmg = Math.ceil(dmg * 1.25);
     if (!preReduced && type === 'phys') dmg = Math.max(0, dmg - this.rng.int(0, this.playerAC()));
     const shield = this.getStatus('shield');
     if (shield && dmg > 0) {
@@ -1100,7 +1156,8 @@ export class Game {
     this.msg(`You drink ${itemName(it, this.ident)}.`, C.item);
     switch (it.id) {
       case 'heal': {
-        const n = 15 + p.level * 2;
+        let n = 15 + p.level * 2;
+        if (this.hasCorr('secondstomach')) n = Math.round(n * 1.5);
         this.healPlayer(n);
         const ps = this.getStatus('poison');
         if (ps) this.removeStatus(p, 'poison');
@@ -1108,7 +1165,7 @@ export class Game {
         break;
       }
       case 'mana':
-        p.mp = Math.min(this.maxMpTot(), p.mp + 15 + p.level);
+        p.mp = Math.min(this.maxMpTot(), p.mp + Math.round((15 + p.level) * (this.hasCorr('secondstomach') ? 1.5 : 1)));
         this.msg('Power floods back into you.', C.good);
         break;
       case 'might':
@@ -1150,6 +1207,12 @@ export class Game {
   read(it: Item): boolean {
     const p = this.player;
     sfx.play('scroll');
+    if (this.hasCorr('secondstomach') && this.rng.chance(0.2)) {
+      this.msg(`The scroll comes apart in your ink-stained hands, unread.`, C.warn);
+      this.consume(it);
+      this.advanceWorld();
+      return true;
+    }
     this.msg(`You read ${itemName(it, this.ident)}.`, C.item);
     switch (it.id) {
       case 'teleport': {
@@ -1589,7 +1652,8 @@ export class Game {
     this.tickStatuses(p, true);
     if (!this.over) {
       const regenStat = this.getStatus('regen');
-      const hpRate = (0.35 + p.level * 0.05) * this.race.regenMult + (regenStat ? regenStat.power * 0.8 : 0);
+      let hpRate = (0.35 + p.level * 0.05) * this.race.regenMult + (regenStat ? regenStat.power * 0.8 : 0);
+      if (this.hasCorr('chainedheart')) hpRate *= 0.5;
       this.hpAcc += hpRate;
       while (this.hpAcc >= 1) { this.hpAcc -= 1; this.healPlayer(1); }
       const mpRate = (0.25 + Math.max(0, p.wil - 10) * 0.03) * (this.ringBonus('springs') > 0 ? 2 : 1);

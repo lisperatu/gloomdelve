@@ -18,31 +18,31 @@ export const STRATA: Stratum[] = [
     name: 'The Mossgrave Catacombs', sub: 'where the dead were stacked like firewood',
     depths: [1, 4], gen: 'rooms',
     floor: [98, 92, 114], wall: [170, 156, 192], accent: '#7d9a62',
-    intro: 'Cold air rises from below, thick with the smell of wet stone and old prayers. The way behind you seals itself with a sound like a swallowed scream.',
+    intro: 'Cold air rises from below, thick with the smell of wet stone and old prayers. Behind you the way does not slam — it closes the way a ledger closes, softly, on a finished entry.',
   },
   {
     name: 'The Fungal Weald', sub: 'a forest that grew where no light ever fell',
     depths: [5, 9], gen: 'caves',
     floor: [72, 104, 86], wall: [120, 168, 138], accent: '#59d4a0',
-    intro: 'Pale stalks taller than men sway in a wind that does not exist. Everything here breathes. Everything here is watching.',
+    intro: 'Pale stalks taller than men sway in a wind that does not exist. Everything here breathes in unison. After a while, so do you.',
   },
   {
     name: 'The Drowned Cloister', sub: 'the choir sings on, beneath black water',
     depths: [10, 14], gen: 'flooded',
     floor: [72, 94, 122], wall: [120, 154, 198], accent: '#4a8fc0',
-    intro: 'Flooded halls of a sunken cathedral. Somewhere beneath the water, a congregation that never stopped their hymn.',
+    intro: 'Flooded halls of a sunken cathedral, and the hymn reaches you through your teeth before your ears. The black water is warmer than it has any right to be.',
   },
   {
     name: 'The Ember Fathoms', sub: 'the world’s furnace, still burning',
     depths: [15, 19], gen: 'ember',
     floor: [122, 80, 68], wall: [188, 116, 94], accent: '#ff6a2a',
-    intro: 'Heat rolls over you in waves. Rivers of fire crawl through the black rock, and things made of cinder and hate crawl beside them.',
+    intro: 'Heat rolls over you in waves. Rivers of fire crawl through the black rock, and things made of cinder walk their banks like foundry hands who never heard the shift end.',
   },
   {
     name: 'The Unlight Throne', sub: 'where darkness itself was crowned',
     depths: [20, 20], gen: 'throne',
     floor: [78, 66, 106], wall: [126, 104, 174], accent: '#8a5cff',
-    intro: 'There is no darkness here — there is Unlight, a radiance of absence. On a throne of frozen shadow, something ancient opens a thousand eyes.',
+    intro: 'There is no darkness here — there is Unlight, a radiance of absence. On a throne of frozen shadow, something ancient opens a thousand eyes, and not one of them turns to you.',
   },
   { // 5: Ossuary (branch)
     name: 'The Ossuary', sub: 'where the dead are filed, not buried',
@@ -98,29 +98,29 @@ export const BRANCHES: BranchDef[] = [
   {
     id: 'ossuary', name: 'The Ossuary', sub: 'where the dead are filed, not buried',
     entry: 3, levels: 2, stratum: 5, boss: 'charnelbride',
-    intro: 'Shelves of bone rise out of sight, catalogued in a script of notches. Something here keeps the archive — and it is missing an entry shaped exactly like you.',
+    intro: 'Shelves of bone rise out of sight, catalogued in a script of notches. The aisles run on past where the outer wall should be, and the shelving never repeats. The archive is missing one entry, shaped exactly like you.',
   },
   {
     id: 'silkfen', name: 'The Silkfen', sub: 'the pantry of a patient mother',
     entry: 7, levels: 2, stratum: 6, boss: 'mothersilk',
-    intro: 'Every surface is wrapped in grey silk, and some of the bundles are still breathing. High above, something vast shifts its weight along the threads.',
+    intro: 'Every surface is wrapped in grey silk, and some of the bundles are still breathing — all of them, you notice, in unison. High above, something vast shifts its weight along the threads.',
   },
   {
     id: 'chains', name: 'The Vault of Chains', sub: 'the dungeon’s own prison',
     entry: 12, levels: 3, stratum: 7, boss: 'gaoler',
-    intro: 'Chains thick as trees vanish into darkness overhead, each one taut, each one holding something. The Gaoler’s ledger has room for one more name.',
+    intro: 'Chains thick as trees vanish into darkness overhead, each one taut, each one holding something. The Gaoler’s ledger has room for one more name, and the line is already ruled.',
   },
 ];
 BRANCHES.push(
   {
     id: 'waxgarden', name: 'The Wax Garden', sub: 'a vigil that would not gutter',
     entry: 3, levels: 2, stratum: 8, boss: 'vestal',
-    intro: 'Ten thousand candles, all lit, none guttering. Someone has been tending them since the sun was stolen — and the wax has been rising like a tide around her ankles for nine generations.',
+    intro: 'Ten thousand candles, all lit, none guttering, and not one of them casts your shadow. Someone has been tending them since the sun was stolen — and the wax has been rising around her like a patient tide for nine generations.',
   },
   {
     id: 'roots', name: 'The Roots', sub: 'what the buried forests became',
     entry: 7, levels: 2, stratum: 9, boss: 'taproot',
-    intro: 'The Grave-Elves buried their forests, but forests do not stay buried — they dig. You are inside the root-ball of a wood that has spent nine generations reaching for something below.',
+    intro: 'The Grave-Elves buried their forests, but forests do not stay buried — they dig. You are inside the root-ball of a wood that has spent nine generations reaching for something below, and lately the reaching has been reaching back.',
   },
   {
     id: 'cistern', name: 'The Mirror Cistern', sub: 'where the water shows too much',
@@ -141,6 +141,58 @@ export function stratumFor(depth: number): Stratum {
 }
 
 export const MAX_DEPTH = 20;
+
+// ============================================================ corruptions
+// Offered by the Nameless Editor at warped altars. Permanent trade-offs.
+export interface CorruptionDef {
+  id: string;
+  name: string;
+  gain: string;
+  cost: string;
+  lore: string;
+}
+export const CORRUPTIONS: CorruptionDef[] = [
+  {
+    id: 'venomglands', name: 'Venom Glands',
+    gain: 'Your blows often poison.', cost: '−2 DEX (something in your hands sits differently now)',
+    lore: 'The glands are grown, not given. You will catch yourself salivating at wounds.',
+  },
+  {
+    id: 'hollowedeye', name: 'The Hollowed Eye',
+    gain: 'Sense all creatures nearby, through stone.', cost: '−2 sight radius',
+    lore: 'One eye is taken and nothing visible is put back. What sees through the socket now does not use light.',
+  },
+  {
+    id: 'barkgraft', name: 'Bark Graft',
+    gain: '+3 armor.', cost: '−2 evasion · fire finds you kindling',
+    lore: 'A strip of the buried forests, sewn on living. It grows a ring each year, whether you do or not.',
+  },
+  {
+    id: 'chainedheart', name: 'Chained Heart',
+    gain: '+25% maximum health.', cost: 'natural healing halved',
+    lore: 'The Vault forges very small chains, for very specific prisoners. Yours beats against its links, stronger for the resistance.',
+  },
+  {
+    id: 'secondstomach', name: 'Second Stomach',
+    gain: 'Potions are half again as potent.', cost: 'scrolls sometimes come apart in your hands',
+    lore: 'It is not clear what it digests when you have not drunk anything. It is always digesting something.',
+  },
+  {
+    id: 'ledgerhand', name: 'Ledger Hand',
+    gain: 'Find half again as much gold.', cost: 'the gods trust you less: piety gains halved',
+    lore: 'Your right hand has been deputized. It counts things now, on its own, at night. The gods can read the ink under your skin.',
+  },
+  {
+    id: 'mothlung', name: 'Moth Lung',
+    gain: 'Immunity to poison.', cost: '−10% maximum health',
+    lore: 'You exhale a little dust now, in cold corridors. It always drifts downward, toward the throne, like everything else.',
+  },
+  {
+    id: 'swallowedkey', name: 'The Swallowed Key',
+    gain: '+1 to all attributes.', cost: 'the dungeon knows where you are: enemies wake far more easily',
+    lore: 'It goes down cold and it does not come up. Somewhere below, a lock has begun composing its expectations.',
+  },
+];
 
 // ============================================================ races
 export interface RaceDef {

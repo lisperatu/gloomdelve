@@ -264,6 +264,17 @@ export function generateLevel(depth: number, rng: RNG, luck = 0, opts: GenOpts =
   else if (depth < 20 || opts.branch) map.tiles[best] = T.StairsDown;
   const sx = best % W, sy = Math.floor(best / W);
 
+  // ---- warped altar of the Nameless Editor (rare, spine, depth 4+)
+  if (!opts.branch && depth >= 4 && depth < 20 && rng.chance(0.28)) {
+    for (let tries = 0; tries < 40; tries++) {
+      const wi = rng.pick(open);
+      if (map.tiles[wi] !== T.Floor) continue;
+      map.tiles[wi] = T.WarpAltar;
+      map.lights.push({ x: wi % W, y: Math.floor(wi / W), r: 4, color: [140, 220, 100], flicker: rng.next() * 10 });
+      break;
+    }
+  }
+
   // ---- the Gravemerchant (rare, spine only)
   if (!opts.branch && depth >= 2 && depth <= 18 && rng.chance(0.22)) {
     for (let tries = 0; tries < 40; tries++) {
