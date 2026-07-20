@@ -4,13 +4,21 @@ A dark, gloomy, DCSS-inspired roguelike for the browser. Twenty procedurally gen
 floors down to the Unlight Sovereign's throne; the way back always seals — the only way
 out is through.
 
-## Run
+## Play
+
+**In your browser, no install:** https://lisperatu.github.io/gloomdelve/
+
+**Run locally (Linux/macOS/Windows — needs Node 20+):**
 
 ```sh
+git clone https://github.com/lisperatu/gloomdelve
+cd gloomdelve
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # production build in dist/
+npm run dev        # play at http://localhost:5173
 ```
+
+Static build: `npm run build`, then serve `dist/` with anything (`npx serve dist`).
+Maintainers deploy with `./deploy.sh` (builds and force-pushes the `gh-pages` branch).
 
 ## The game
 
@@ -26,6 +34,15 @@ npm run build    # production build in dist/
 - **5 strata**, each with its own generator, palette and bestiary: room-and-corridor
   catacombs, cellular-automata fungal caves, flooded cloister halls, lava-riddled ember
   fathoms, and the pillared throne vault.
+- **3 optional side branches** (DCSS-style): The Ossuary, The Silkfen, and the Vault of
+  Chains — sealed gates on the descent lead to short themed sub-dungeons with unique
+  monsters, their own bosses (the Charnel Bride, Mother-of-Silk, the Gaoler) and
+  guaranteed prizes. The only way back is through.
+- **Examine & Codex**: `x` inspects anything on screen (stats transparent, DCSS-style);
+  `c` opens the Delver's Codex — a discovery-driven bestiary with two-tier lore entries
+  (slay a creature enough and its deeper truth unlocks), god myths, race/class origins,
+  and the Chronicle: the story of the stolen First Light, drip-fed as you reach strata,
+  meet bosses, join gods, die, and win. Codex knowledge persists across deaths.
 - **~40 monsters** that scale with depth (HP/damage grow when spawning below their native
   floor), packs, ranged casters, summoners, life-drinkers, regenerators — plus 5 bosses
   on floors 4 / 9 / 14 / 19 / 20.
