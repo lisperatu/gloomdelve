@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GLOOMDELVE — Depths of the Unlight</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕯️</text></svg>" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="stage">
+      <canvas id="view"></canvas>
+      <div id="scanlines"></div>
+      <div id="overlay" class="hidden"></div>
+    </div>
+    <aside id="side">
+      <div id="hud"></div>
+      <canvas id="minimap" width="220" height="140"></canvas>
+      <div id="log"></div>
+      <div id="keyhints"><b>?</b> help · <b>o</b> explore · <b>r</b> rest · <b>i</b> inventory · <b>g</b> take · <b>p</b> pray · <b>&gt;</b> descend · <b>1–5</b> abilities · <b>x</b> examine · <b>c</b> codex</div>
+    </aside>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
