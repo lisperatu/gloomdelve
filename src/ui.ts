@@ -264,6 +264,7 @@ export class UI {
   // ============================== codex
   codexTab: 'bestiary' | 'faiths' | 'chronicle' | 'origins' = 'bestiary';
   codexSel = 0;
+  codexSearch: string | null = null; // null = not searching
 
   showCodex(): void {
     this.mode = 'codex';
@@ -273,7 +274,12 @@ export class UI {
     const tabs = `${tabBtn('bestiary', 'Bestiary', '1')} ${tabBtn('faiths', 'Faiths', '2')} ${tabBtn('chronicle', 'Chronicle', '3')} ${tabBtn('origins', 'Origins', '4')}`;
     let body = '';
     if (this.codexTab === 'bestiary') {
-      const seen = MONSTERS.filter((m) => g.bestiary.has(m.id));
+      let seen = MONSTERS.filter((m) => g.bestiary.has(m.id));
+      if (this.codexSearch) {
+        const q = this.codexSearch.toLowerCase();
+        const filtered = seen.filter((m) => m.name.toLowerCase().includes(q));
+        if (filtered.length) seen = filtered;
+      }
       const total = MONSTERS.filter((m) => m.weight > 0 || m.boss).length;
       if (!seen.length) {
         body = `<p class="flavor">Nothing catalogued yet. Meet the dark; it is eager to be introduced.</p>`;
@@ -299,7 +305,9 @@ export class UI {
             <div class="inv-list cx-list">${list}</div>
             <div class="cx-detail">${stats}${lore ? `<p class="ex-lore">${lore}</p>` : ''}${deeper}</div>
           </div>
-          <p class="hint">${seen.length}/${total} creatures catalogued (knowledge survives death) · <span class="key">↑↓</span> browse</p>`;
+          <p class="hint">${this.codexSearch !== null
+            ? `search: <b style="color:#e8c860">${this.codexSearch || '…'}</b> (type to filter, <span class="key">Enter</span> done)`
+            : `${seen.length}/${total} catalogued (knowledge survives death) · <span class="key">↑↓</span> browse · <span class="key">/</span> search`}</p>`;
       }
     } else if (this.codexTab === 'faiths') {
       const gods = GODS;
@@ -366,6 +374,15 @@ export class UI {
     });
   }
 
+  openCodexAt(monsterId: string): void {
+    this.codexTab = 'bestiary';
+    this.codexSearch = null;
+    const seen = MONSTERS.filter((m) => this.game.bestiary.has(m.id));
+    const i = seen.findIndex((m) => m.id === monsterId);
+    this.codexSel = Math.max(0, i);
+    this.showCodex();
+  }
+
   chronicleUnlocked(e: { unlock: { kind: string; key?: string | number } }): boolean {
     const g = this.game;
     switch (e.unlock.kind) {
@@ -400,8 +417,35 @@ export class UI {
   }
 
   codexKey(k: string): void {
+    if (this.codexSearch !== null) {
+      if (k === 'Enter' || k === 'Escape') {
+        if (k === 'Escape') this.codexSearch = null;
+        else this.codexSearch = this.codexSearch || null;
+        this.showCodex();
+        return;
+      }
+      if (k === 'Backspace') {
+        this.codexSearch = this.codexSearch.slice(0, -1);
+        this.codexSel = 0;
+        this.showCodex();
+        return;
+      }
+      if (k.length === 1 && /[a-z -]/i.test(k)) {
+        this.codexSearch += k.toLowerCase();
+        this.codexSel = 0;
+        this.showCodex();
+      }
+      return;
+    }
+    if (k === '/' && this.codexTab === 'bestiary') {
+      this.codexSearch = '';
+      this.codexSel = 0;
+      this.showCodex();
+      return;
+    }
     if (k === 'Escape' || k === 'c') {
       this.mode = 'play';
+      this.codexSearch = null;
       this.hide();
       return;
     }
@@ -458,6 +502,14 @@ export class UI {
       this.endExamine();
       return;
     }
+    if (k === 'v') {
+      const mon = g.monsters.find((m) => m.x === this.exX && m.y === this.exY);
+      if (mon && g.level.visible[this.exY * g.level.w + this.exX]) {
+        this.endExamine();
+        this.openCodexAt(mon.def.id);
+      }
+      return;
+    }
     if (k === 'Tab' || k === 'x' || k === '+') {
       const vis = g.visibleMonsters();
       if (vis.length) {
@@ -497,7 +549,8 @@ export class UI {
     const i = y * L.w + x;
     const explored = L.explored[i] === 1;
     const visible = L.visible[i] === 1;
-    const head = `<div class="ex-hint"><span class="key">←↑↓→</span> move · <span class="key">Tab</span> next foe · <span class="key">Esc</span> done</div>`;
+    const onMon = this.game.monsters.some((m) => m.x === x && m.y === y && this.game.level.visible[y * this.game.level.w + x]);
+    const head = `<div class="ex-hint"><span class="key">←↑↓→</span> move · <span class="key">Tab</span> next foe${onMon ? ' · <span class="key">v</span> full codex entry' : ''} · <span class="key">Esc</span> done</div>`;
     if (!explored) return `${head}<h3>The Unknown</h3><p class="ex-fla">You have not walked there. It may not want you to.</p>`;
     const mon = visible ? g.monsters.find((m) => m.x === x && m.y === y) : undefined;
     if (mon) return head + this.describeMonster(mon);

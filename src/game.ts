@@ -228,6 +228,14 @@ export class Game {
       this.whispersFired.push(wh.id);
       this.msg(wh.text, '#a89cc4');
     }
+    // state-conditioned margin notes (fire once per run)
+    if (this.player.hp < this.maxHpTot() * 0.3 && !this.whispersFired.includes('wounded')) {
+      this.whispersFired.push('wounded');
+      this.msg('The Cartographer\u2019s rule for floors entered bleeding: "The dungeon can smell arithmetic. Rest before you owe it a remainder."', '#a89cc4');
+    } else if (this.player.gold >= 250 && !this.whispersFired.includes('rich')) {
+      this.whispersFired.push('rich');
+      this.msg('A margin note beside a coin-tally: "Everyone who failed brought something worth stealing. You are becoming worth stealing."', '#a89cc4');
+    }
     if (depth > 1) sfx.play('stairs');
     this.updateFOV();
     this.distMap = bfsDistance(this.level, this.player.x, this.player.y, true);
