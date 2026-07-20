@@ -40,14 +40,20 @@ export class UI {
   }
 
   // ============================== overlays
+  private updateChrome(): void {
+    const inMenu = ['title', 'race', 'class', 'name', 'hall'].includes(this.mode);
+    document.body.classList.toggle('menu', inMenu);
+  }
   private show(html: string, opaque = false): void {
     this.overlay.innerHTML = html;
     this.overlay.classList.remove('hidden');
     this.overlay.classList.toggle('opaque', opaque);
+    this.updateChrome();
   }
   private hide(): void {
     this.overlay.classList.add('hidden');
     this.overlay.innerHTML = '';
+    this.updateChrome();
   }
 
   showTitle(): void {
@@ -70,6 +76,8 @@ export class UI {
           and every grave between here and there is merely a waiting room.<br/>
           Descend. Pledge your soul to whatever listens. Come back crowned — or not at all.</p>
           <p class="hint">${hint}</p>
+          <div class="title-feats">26 floors · 6 side branches · 7×7 lineages & callings · 6 gods · 51 creatures ·
+          discovery codex · named delvers & hall of fame · your run auto-saves</div>
         </div>
       </div>`, true);
   }

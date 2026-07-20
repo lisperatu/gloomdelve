@@ -245,3 +245,9 @@ html, body {
 .title-body .flavor { color: #cfc6b4; font-style: italic; line-height: 1.6; font-size: 15.5px;
   text-shadow: 0 1px 4px #000, 0 0 12px rgba(0,0,0,.8); margin-bottom: 14px; }
 .title-body .hint { color: #a89c88; font-size: 15px; text-shadow: 0 1px 3px #000; }
+
+body.menu #side { display: none; }
+.title-feats {
+  margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(184,168,200,.18);
+  color: #8d8578; font-size: 12.5px; letter-spacing: 1px; text-shadow: 0 1px 3px #000;
+}
