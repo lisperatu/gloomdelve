@@ -380,7 +380,7 @@ export function interactObject(g: Game, x: number, y: number): boolean {
         return true;
       }
       o.lit = 1;
-      L.lights.push({ x, y, r: 4, color: [255, 200, 110], flicker: Math.random() * 10 });
+      L.lights.push({ x, y, r: 4, color: [255, 200, 110], flicker: g.rng.next() * 10 });
       const litLines = [
         'The first flame takes: for what was taken. Far above, the horizon does not notice. The wax does.',
         'The second flame takes: for she who waits. Deeper in the garden, something that has stood a very long time straightens slightly.',
@@ -438,7 +438,7 @@ export function interactObject(g: Game, x: number, y: number): boolean {
       m.seed = 0;
       L.tiles[i] = T.Fungus;
       L.objects.delete(i);
-      L.lights.push({ x, y, r: 3.5, color: [120, 220, 130], flicker: Math.random() * 10 });
+      L.lights.push({ x, y, r: 3.5, color: [120, 220, 130], flicker: g.rng.next() * 10 });
       g.msg('The loam takes the seed like a held breath released. Every root in the walls turns toward it at once.', CO.warn);
       if (typeof m.door === 'number') {
         const dd = m.door;
@@ -462,7 +462,7 @@ export function interactObject(g: Game, x: number, y: number): boolean {
         g.msg('The date on the shelf-tag has not happened yet.', CO.lore);
         solve(g, 'chains');
       } else {
-        const def = MONSTER_BY_ID.get(Math.random() < 0.5 ? 'chainedpenitent' : 'gaolwraith');
+        const def = MONSTER_BY_ID.get(g.rng.chance(0.5) ? 'chainedpenitent' : 'gaolwraith');
         if (def) {
           const mon = spawnMonster(def, x, y - 1, g.effDepth());
           mon.awake = true;
@@ -498,7 +498,7 @@ export function interactObject(g: Game, x: number, y: number): boolean {
             if (isWalkable(nt) && nt !== T.Lava && !g.monsterAt(nx, ny)) spots.push([nx, ny]);
           }
         if (spots.length) {
-          const [sx, sy] = spots[Math.floor(Math.random() * spots.length)];
+          const [sx, sy] = g.rng.pick(spots);
           const mon = spawnMonster(shade, sx, sy, g.effDepth());
           mon.awake = true;
           g.monsters.push(mon);
