@@ -64,10 +64,13 @@ branch that is only a queue, and what happens if you skip it).
 - [x] **Bidirectional stairs**: climb back up (`<`); every floor is cached exactly as
       left (monsters, loot, fog, abandoned allies) and survives save/restore. The
       surface stays sealed. New perspective stairwell sprites (down into dark, up into pale light).
-- [ ] **Mysterious puzzle objects** per branch (agent in flight): simple 2–4 step
-      puzzles deeply aligned with each branch's fiction; solving opens/reveals things.
-- [ ] **Inventory item detail view** (agent in flight): lore + identified effects + stats.
-- [ ] **Doll & equipment art pass** (agent in flight): ruthless review of race dolls + overlays.
+- [x] **Mysterious puzzle objects**: one riddle per branch (skull refiling, candle vow
+      order, tithe-scale, seed cairn, reserved cell, still basin), each opening a sealed
+      way + a deed-gated Chronicle chapter. src/objects.ts + objsprites.ts.
+- [x] **Inventory item detail view**: Shift+letter — stats, egos spelled out, lore, id-gating.
+- [x] **Doll & equipment art pass**: all 7 races distinct, 5 overlays + held weapons redrawn.
+- [x] **Sim-driven balance pass 2**: depth 5-8 death wall 52%→27%, class spread 5.1;
+      fixed sim bot never picking up items (invalidated old baselines).
 - [ ] **Sub-branches**: branches within branches, each a different KIND of place;
       branch stack routing. Full design + content staged in `staging/next-branches.md`.
 - [ ] **Branch pair 4 (entry 15)**: the Waiting Room (a queue with no clerk; sub-branch:
